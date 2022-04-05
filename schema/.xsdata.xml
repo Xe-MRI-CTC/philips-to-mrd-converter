@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Config xmlns="http://pypi.org/project/xsdata" version="20.11.1">
+  <Output wsdl="false">
+    <Package>generated</Package>
+    <Format>dataclasses</Format>
+    <Structure>filenames</Structure>
+    <CompoundFields>false</CompoundFields>
+  </Output>
+  <Conventions>
+    <ClassName case="camelCase" safePrefix="type"/>
+    <FieldName case="originalCase" safePrefix="value"/>
+    <ModuleName case="camelCase" safePrefix="mod"/>
+    <PackageName case="camelCase" safePrefix="pkg"/>
+  </Conventions>
+</Config>
