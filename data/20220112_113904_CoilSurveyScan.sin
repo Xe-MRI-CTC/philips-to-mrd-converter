@@ -1,0 +1,199 @@
+ CAUTION - Investigational device
+ Limited by Federal Law to investigational use.
+
+ File names of coil survey scan data:
+
+
+ Internal reconstruction parameters:
+ 
+ Reconstruction parameters independent of mix, echo and location:
+ 
+ 00 00 00: scan_name                    : CoilSurveyScan
+ 00 00 00: start_scan_date_time         : 12-JAN-2022 11:39:04.30
+ 00 00 00: recon_command                :           18
+ 00 00 00: force_immed_zrecon_flag      :            1
+ 00 00 00: nr_mixes                     :            1
+ 00 00 00: total_nr_profiles            :          730
+ 00 00 00: min_nrs_profs_each_side      :            0            1            1            0
+ 00 00 00: min_nrs_profs_total          :            0            4            1            0
+ 00 00 00: data_rate                    :        46085
+ 00 00 00: data_burst_size              :          384
+ 00 00 00: input_buffer_fraction        :       0.0000
+ 00 00 00: sample_time_interval         :       2.5200
+ 00 00 00: min_data_compress_factor     :            2
+ 00 00 00: max_data_compress_factor     :            2
+ 00 00 00: min_def_window_perc          :       0.1000
+ 00 00 00: max_def_window_perc          :      99.9000
+ 00 00 00: min_def_window_perc_range    :       7.0000
+ 00 00 00: min_normalized_image_perc    :       0.1000
+ 00 00 00: max_normalized_image_perc    :      99.9000
+ 00 00 00: nrs_bytes_per_pixel          :            2            2
+ 00 00 00: pixel_maxima                 :         4095         4095
+ 00 00 00: snr_maxima                   :     600.0000     600.0000
+ 00 00 00: snr_safety_factors           :       2.5000       2.5000
+ 00 00 00: acq_gamma                    :   42577.4688
+ 01 00 00: stack_reverse                :            0
+ 01 00 00: stack_slice_number           :            1
+ 00 00 00: relative_fear_bandwidth      :       0.1000
+ 00 00 00: enable_immed_zrecon          :            1
+ 00 00 00: max_zrecon_length            :            1
+ 00 00 00: enable_implicit_profnr_end   :            1
+ 00 00 00: hom_filter_type              :            4
+ 00 00 00: homomorph_filt_smooth_arr    :       0.0000       0.0000       0.0000
+ 00 00 00: homomorph_filt_corr_arr      :       1.0000       1.0000       1.0000
+ 01 00 00: b1_field_coefs               :     100.0000       1.0000       0.0000      -0.0850
+ 00 00 00: b1_field_accuracy            :      25.0000
+ 00 00 00: b1_field_length              :     480.0000
+ 00 00 00: shutter_type                 :            2
+ 00 00 00: enable_uniform_scaling       :            1
+ 00 00 00: enable_profile_ordering      :            1
+ 00 00 00: save_complex_data            :            1
+ 00 00 00: memory_allowed_space         :        15991
+ 00 00 00: memory_scheme_index          :           19
+ 00 00 00: enable_jdb_detection         :            1
+ 00 00 00: enable_jdb_suppression       :            1
+ 00 00 00: jdb_threshold_1              :           40
+ 00 00 00: jdb_threshold_2              :          300
+ 00 00 00: enable_frc                   :            1
+ 00 00 00: enable_frc_receiver          :            1
+ 00 00 00: enable_frc_ampl_corr         :            1
+ 00 00 00: frc_resolution               :         8192
+ 00 00 00: frc_oversample_noise_factor  :          416
+ 00 00 00: enable_dc_offset_corr        :            1
+ 00 00 00: dc_fixed_nr_samples          :            1
+ 00 00 00: dc_min_encoding_number       :          -24
+ 00 00 00: dc_max_encoding_number       :           23
+ 01 00 00: noise_clip_factors           :       1.1500
+ 01 00 01: noise_rel_to_abs_channels    :            0            0
+ 00 00 00: is_coca_scan                 :            1
+ 01 00 00: coca_qbc_min_encoding_nrs    :            0            0            0            0
+ 01 00 00: coca_qbc_max_encoding_nrs    :            0            0            0            0
+ 01 00 00: pat_post_coil_position       :       0.0000       0.0000       0.0000
+ 00 00 00: image_uniformity             :            6
+ 00 00 00: coca_qbc_nr_channels         :            1
+ 00 00 00: fcc_matrix_channel_selection :            0
+ 00 00 00: fcc_snr_loss                 :       1.0000
+ 00 00 00: fcc_qbc_threshold            :       0.2000
+ 01 00 00: water_fat_shift              :       0.0000
+ 00 00 00: qmet_log_enable              :            1
+ 00 00 00: apt_processing               :            0
+ 00 00 00: measurement_combination_type :            1
+ 01 00 00: coil_survey_acq_numbers      :            0
+ 01 00 00: coil_survey_rec_numbers      :            0
+ 00 00 00: coil_survey_max_stacks       :            0
+ 00 00 00: coil_survey_data_compress_f  :            2
+ 01 00 00: coil_survey_nr_channels      :            0
+ 00 00 00: coil_survey_max_recon_resol  :           64           64           64
+ 00 00 00: coil_survey_to_csm_factor    :       1.0000
+ 00 00 00: coil_survey_qbc_channel      :            0
+ 00 00 00: coil_survey_qbc_stack        :            0
+ 00 00 00: acs_selection_criterion      :            0
+ 00 00 00: acs_snr_criterion_power      :       2.0000
+ 00 00 00: acs_dominant_snr_criterion   :      10.0000
+ 00 00 00: acs_expected_snr             :      50.0000
+ 00 00 00: acs_channel_select_snr_loss  :       0.0000
+ 00 00 00: acs_masking_qbc_snr_threshld :      20.0000
+ 
+ Reconstruction parameters dependent of mix:
+ 
+ 01 00 00: sequence_types               :            2
+ 01 00 00: nr_dynamic_scans             :            1
+ 01 00 00: nr_cardiac_phases            :            1
+ 01 00 00: nr_echoes                    :            1
+ 01 00 00: nr_locations                 :            1
+ 01 00 00: nr_rows                      :            1
+ 01 00 00: nr_extra_attr_values         :            1
+ 01 00 00: nr_measurements              :            1
+ 01 00 00: encoding_dimensions          :            3
+ 01 00 00: encoded_properties           :            0            1            2            4
+ 01 00 00: recon_resolutions            :           48           32           47            1
+ 01 00 00: output_resolutions           :           48           48           47            1
+ 01 00 00: complex_disk_output_images   :            0
+ 01 00 00: complex_hidden_output_images :            0
+ 01 00 00: complex_view_output_images   :            0
+ 01 00 00: repetition_times             :       2.0831
+ 01 00 00: inversion_delays             :       0.0000       0.0000
+ 01 00 00: shutter_radiuses             :     290.0000     290.0000     240.0000
+ 01 00 00: shutter_box_sizes            :     450.0000     450.0000     450.0000
+ 01 00 00: voxel_sizes                  :      14.6875      14.6875      15.0000
+ 01 00 00: ph_recon_resolutions         :           48
+ 
+ Reconstruction parameters dependent of mix and echo:
+ 
+ 01 01 00: min_encoding_numbers         :          -24           -8          -15            0
+ 01 01 00: max_encoding_numbers         :           23            7           14            0
+ 01 01 00: oversample_factors           :       2.0000       1.0000       1.2766       1.0000
+ 01 01 00: spectrum_signs               :            1            1            1            1
+ 01 01 00: spectrum_origins             :            0          -16          -30            0
+ 01 01 00: filter_types                 :            1            1            1            0
+ 01 01 00: filter_widths                :       0.0000       0.0000       0.0000       0.0000
+ 01 01 00: filter_lifts                 :       0.0000       0.0000       0.0000       0.0000
+ 01 01 00: echo_times                   :       1.2713
+ 01 01 00: ph_min_encoding_numbers      :          -24            0
+ 01 01 00: ph_max_encoding_numbers      :           23            0
+ 01 01 00: ph_oversample_factors        :       2.0000
+ 01 01 00: ph_spectrum_signs            :            1
+ 01 01 00: ph_spectrum_origins          :            0
+ 
+ Reconstruction parameters dependent of mix and location:
+ 
+ 01 00 01: in_plane_transformations     :            5
+ 01 00 01: slice_orientations           :            1
+ 01 00 01: location_center_coordinates  :      40.0000       0.0000      -0.5000
+ 01 01 01: location_matrices            :       0.0000      -1.0000       0.0000
+ 01 02 01: location_matrices            :       0.0000       0.0000      -1.0000
+ 01 03 01: location_matrices            :      -1.0000       0.0000       0.0000
+ 
+ Reconstruction parameters dependent of stack or location:
+ 
+ 00 00 00: nr_channel_names             :            2
+ 01 00 00: channel_names                : _ConnQBC/BODY_QUAD.E1
+ 02 00 00: channel_names                : _ConnQBC/BODY_QUAD.E2
+ 01 00 00: receiving_coils              : BODY_QUAD
+ 01 00 00: receive_coil_types           :            3
+ 01 00 00: quad_receive_coils           :            1
+ 01 00 00: receiver_nrs                 :            0            0
+ 01 00 00: nr_measured_channels         :            2
+ 01 00 00: ph_nr_measured_channels      :            2
+ 01 00 01: measured_channels            :            0            1
+ 01 00 01: ph_measured_channels         :            0            1
+ 01 00 00: fcc_modes                    :            4
+ 01 00 00: nr_channels_after_fcc        :            1
+ 01 00 00: min_nr_channels_after_fcc    :            1
+ 01 00 00: ph_fcc_modes                 :            4
+ 01 00 00: ph_nr_channels_after_fcc     :            1
+ 01 00 00: ph_min_nr_channels_after_fcc :            1
+ 00 00 00: nr_groups                    :            4
+ 01 00 00: nr_measured_channels_per_gro :            2            0            1            1
+ 01 00 01: measured_channels_per_group  :            0            1
+ 01 00 03: measured_channels_per_group  :            0
+ 01 00 04: measured_channels_per_group  :            1
+ 01 00 01: channel_combinations         : 01
+ 01 00 01: immed_channel_combinations   : 11
+ 01 00 01: ph_immed_channel_combination : 11
+ 01 01 00: phase_per_channel_arr        :      -0.0000
+ 01 01 00: scale_per_channel_arr        :       1.0000
+ 01 02 00: phase_per_channel_arr        :       4.3498
+ 01 02 00: scale_per_channel_arr        :       1.0248
+ 00 00 01: coil_survey_stacks           :            0
+ 01 00 00: b1_field_corr_power_arr      :       1.0000
+ 
+ Reconstruction parameters dependent of mix, echo and location:
+ 
+ 01 01 01: zeroth_phase_errors          :       0.0000
+ 01 01 01: first_phase_errors           :       0.0000       0.0000       0.0000       0.0000
+ 
+ Reconstruction parameters for database storage of images:
+ 
+ 00 00 00: scan_resolutions             :           24           24           24            1
+ 01 00 00: flip_angles                  :       1.0000
+ 00 00 00: slice_thickness              :      30.0000
+ 01 00 00: spacing_between_slices_arr   :      15.0000
+ 01 01 00: acquisition_contrasts        :            7
+ 00 00 01: location_phase_enc_dirs      :            0
+ 00 00 01: loc_ap_rl_fh_row_image_oris  :       1.0000       0.0000       0.0000
+ 00 00 01: loc_ap_rl_fh_col_image_oris  :       0.0000       0.0000      -1.0000
+ 00 00 01: loc_ap_rl_fh_offcentres      :     -40.0000       0.0000       0.0000
+ 00 00 01: ap_rl_fh_ovs_offcentres      :       0.0000       0.0000       0.0000
+ 00 00 01: loc_ap_rl_fh_offcentr_incrs  :       0.0000     -15.0000       0.0000
+ 
