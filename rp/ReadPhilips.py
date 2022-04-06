@@ -2,11 +2,11 @@ import os
 import time
 import imp
 import numpy as np
-import getSpiralParams
-from getSpiralParams\
+import rp.getSpiralParams
+from rp.getSpiralParams\
     import readParms, Scanner, processSpiralParams
-import readPhilipsExports
-from readPhilipsExports\
+import rp.readPhilipsExports
+from rp.readPhilipsExports\
     import readRaw, readLab, readSin, readData, readList, \
     readRec, readCpx, filename_extcase
 
