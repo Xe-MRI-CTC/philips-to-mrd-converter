@@ -1352,7 +1352,7 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
     maxRetroCardPhases = 100
 
     try:
-        import readMira as rm
+        from .readMira import decodeMira
     except:
         print("Missing library for reading in R4 and R5 Philips "
               "lab/raw/sin data. Please contact your local Philips "
@@ -1557,10 +1557,10 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
             try:  # c++ PyFI implementation of Mira decoding (fast)
                 array_dims = np.array(temp_data.shape, np.int64)
                 bb = np.fromstring(bytebuff, np.uint8)
-                temp_data = rm.decodeMira(bb, array_dims, act_data_size)
+                temp_data = decodeMira(bb, array_dims, act_data_size)
 
             except:  # pure python implementation of Mira decoding (very slow)
-                temp_data = rm.decodeMira(bytebuff, temp_data, act_data_size)
+                temp_data = decodeMira(bytebuff, temp_data, act_data_size)
 
         else:
             fil_raw.seek(seek_offset)
