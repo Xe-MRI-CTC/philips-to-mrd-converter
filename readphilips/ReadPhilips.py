@@ -2,14 +2,9 @@ import os
 import time
 import imp
 import numpy as np
-import getSpiralParams
-from getSpiralParams\
-    import readParms, Scanner, processSpiralParams
-import getRadialParams
-import readPhilipsExports
-from readPhilipsExports\
-    import readRaw, readLab, readSin, readData, readList, \
-    readRec, readCpx, filename_extcase
+from .getSpiralParams import *
+from .getRadialParams import *
+from .readPhilipsExports import *
 
 class PhilipsData():
     
@@ -98,7 +93,7 @@ class PhilipsData():
                     and self.readParamOnly is False:
                 # read the data
                 (dat, dat_noi, dat_phc, hdr, dat_label, noi_label, phc_label) \
-                = readPhilipsExports.readData(
+                = readData(
                     filename_extcase(self.base+'.data'),
                     filename_extcase(self.base+'.list'),
                     self.chopON, self.propTSE, self.propGRASE, self.cur_coil, self.cur_loc)
@@ -135,7 +130,7 @@ class PhilipsData():
         elif self.readType == 1:
             # read the data
             cur_loc = -1  # read all the data
-            dat, hdr, dat_label = readPhilipsExports.readRec(
+            dat, hdr, dat_label = readRec(
                 self.base, self.cur_loc, self.rescale_type)
             dat = dat.astype(np.float32).squeeze()
             header = hdr
@@ -162,7 +157,7 @@ class PhilipsData():
                     and os.path.exists(filename_extcase(self.base+'.sin')) \
                     and self.readParamOnly is False:
                 (dat, dat_noi, dat_phc, rrs, rtops, hdr, dat_label, noi_label,
-                 phc_label) = readPhilipsExports.readRaw(
+                 phc_label) = readRaw(
                     self.base, self.raw_corr, self.chopON, self.cur_coil, self.cur_loc)
                 dat = dat.astype(np.complex64).squeeze()
                 try:
@@ -196,7 +191,7 @@ class PhilipsData():
             # read the data
             cur_coil = -1  # read all the data
             cur_loc = -1
-            dat, hdr, dat_label = readPhilipsExports.readCpx(
+            dat, hdr, dat_label = readCpx(
                 self.base, cur_coil, cur_loc)
             dat = dat.astype(np.complex64).squeeze()
             header = hdr
@@ -206,7 +201,7 @@ class PhilipsData():
             if self._scanner.ver != 'R56':
                 if os.path.exists(filename_extcase(self.base+".txt")):
                     # read the parm file
-                    hdr = readPhilipsExports.readParms(filename_extcase(self.base+".txt"))
+                    hdr = readParms(filename_extcase(self.base+".txt"))
 
                     # spOVERSAMPLING is set to either 1 or 2
                     if 'spOVERSAMPLING' in hdr:
@@ -225,9 +220,9 @@ class PhilipsData():
                         os.path.exists(filename_extcase(self.base+".lab")):
                     if self.readParamOnly is True:
                         self.isMira = False
-                        sin = readPhilipsExports.readSin(filename_extcase(self.base+".sin"))
+                        sin = readSin(filename_extcase(self.base+".sin"))
                         self.isMira = sin['isMira']
-                        lab = readPhilipsExports.readLab(filename_extcase(self.base+".lab"), self.isMira)
+                        lab = readLab(filename_extcase(self.base+".lab"), self.isMira)
                         header = dict()
                         header['headerType'] = 'lab-sin'
                         header['sin'] = sin
@@ -239,7 +234,7 @@ class PhilipsData():
             elif os.path.exists(filename_extcase(self.base+".sin")) and \
                     os.path.exists(filename_extcase(self.base+".lab")):
                 if self.readParamOnly is True:
-                    sin = readPhilipsExports.readSin(filename_extcase(self.base+".sin"))
+                    sin = readSin(filename_extcase(self.base+".sin"))
                     lab = readLab(filename_extcase(self.base+".lab"), self.isMira)
                     header = dict()
                     header['headerType'] = 'lab-sin'
@@ -423,10 +418,10 @@ class PhilipsData():
             self.rr_rtop = rrPlusRtop
         except:
             pass
-        spparams = getSpiralParams.processSpiralParams(header, self.base, self._scanner)
+        spparams = processSpiralParams(header, self.base, self._scanner)
         if len(spparams) > 1:
             self.spparams = spparams
-        radparams = getRadialParams.processRadialParams(header)
+        radparams = processRadialParams(header)
         if len(radparams) > 2:
             self.radparams = radparams
         try:
