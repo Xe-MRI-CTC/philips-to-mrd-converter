@@ -1556,14 +1556,8 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
 
             try:  # c++ PyFI implementation of Mira decoding (fast)
                 array_dims = np.array(temp_data.shape, np.int64)
-<<<<<<< Updated upstream:rp/readPhilipsExports.py
-                bb = np.fromstring(bytebuff, np.uint8)
-                temp_data = rm.decodeMira(bb, array_dims, act_data_size)
-=======
                 bb = np.frombuffer(bytebuff, np.uint8)
                 temp_data = decodeMira(bb, array_dims, act_data_size)
->>>>>>> Stashed changes:rp/readphilips/readPhilipsExports.py
-
             except:  # pure python implementation of Mira decoding (very slow)
                 temp_data = rm.decodeMira(bytebuff, temp_data, act_data_size)
 
