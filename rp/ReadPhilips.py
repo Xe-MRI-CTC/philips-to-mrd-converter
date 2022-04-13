@@ -13,10 +13,10 @@ from rp.readPhilipsExports\
 class PhilipsData():
     
     def __init__(self, fname):        
+        self.fname = fname
         # check that the path actually exists
         if not os.path.exists(fname):
             return
-        self.fname = fname
         # get base filename and extension
         self.base = os.path.splitext(fname)[0]
         self.ext = os.path.splitext(fname)[1]
@@ -260,13 +260,13 @@ class PhilipsData():
         if self.readType == 0 and self.readParamOnly is False:
             shape = list(dat.shape)
             shape.pop(-1)
-            dat = np.fromstring(dat.tostring(), np.complex64)
+            dat = np.frombuffer(dat.tostring(), np.complex64)
             dat.shape = shape
 
             try:
                 shape = list(dat_phc.shape)
                 shape.pop(-1)
-                dat_phc = np.fromstring(dat_phc.tostring(), np.complex64)
+                dat_phc = np.frombuffer(dat_phc.tostring(), np.complex64)
                 dat_phc.shape = shape
             except:
                 pass
@@ -274,7 +274,7 @@ class PhilipsData():
             try:
                 shape = list(dat_noi.shape)
                 shape.pop(-1)
-                dat_noi = np.fromstring(dat_noi.tostring(), np.complex64)
+                dat_noi = np.frombuffer(dat_noi.tostring(), np.complex64)
                 dat_noi.shape = shape
             except:
                 pass

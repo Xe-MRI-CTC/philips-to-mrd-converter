@@ -460,7 +460,7 @@ def readData(filename_data, filename_list, chop_ky,
 
         # read the data into an NPY
         data = fil.read(samples*8)
-        data = np.fromstring(data, dtype=np.float32)
+        data = np.frombuffer(data, dtype=np.float32)
 
         if hdr['typ'][idx] == 'STD':
             # apply chop if appropriate
@@ -853,7 +853,7 @@ def readRec(filename, cur_loc, rescale_type):
 
         # read the data into an NPY array
         data = fil.read(size_bytes)
-        data = np.fromstring(data, dtype=data_type)
+        data = np.frombuffer(data, dtype=data_type)
 
         # Re-scale data according to selected option
         if rescale_type == 0:
@@ -1211,7 +1211,7 @@ def setupCorrections(fil_raw, lab, sin, nchan, isMira):
             nbp_chan = nr_breakpoints[channel]
             data_size = int(12 * nbp_chan)
             bytebuff = fil_raw.read(data_size)
-            bp_raw = np.fromstring(bytebuff, dtype=np.float32)
+            bp_raw = np.frombuffer(bytebuff, dtype=np.float32)
             bp_raw.shape = [nbp_chan, 3]
             # pad breakpoints by 2 to account for levels above and below range
             breakpoints = np.zeros([nbp_chan + 2, 3])
@@ -1247,7 +1247,7 @@ def setupCorrections(fil_raw, lab, sin, nchan, isMira):
         data_size = int(lab['data_size'][dc_ind])
         fil_raw.seek(seek_offset)
         bytebuff = fil_raw.read(data_size)
-        temp_data = np.fromstring(bytebuff, dtype=np.int32)
+        temp_data = np.frombuffer(bytebuff, dtype=np.int32)
         dc_fixed_vals = temp_data.shape[0] // 2
         temp_data.shape = [dc_fixed_vals, 2]
         dc_fixed_arr = temp_data[0:nchan, 0] + 1j*temp_data[0:nchan, 1]
@@ -1556,8 +1556,13 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
 
             try:  # c++ PyFI implementation of Mira decoding (fast)
                 array_dims = np.array(temp_data.shape, np.int64)
+<<<<<<< Updated upstream:rp/readPhilipsExports.py
                 bb = np.fromstring(bytebuff, np.uint8)
                 temp_data = rm.decodeMira(bb, array_dims, act_data_size)
+=======
+                bb = np.frombuffer(bytebuff, np.uint8)
+                temp_data = decodeMira(bb, array_dims, act_data_size)
+>>>>>>> Stashed changes:rp/readphilips/readPhilipsExports.py
 
             except:  # pure python implementation of Mira decoding (very slow)
                 temp_data = rm.decodeMira(bytebuff, temp_data, act_data_size)
@@ -1565,7 +1570,7 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
         else:
             fil_raw.seek(seek_offset)
             bytebuff = fil_raw.read(act_data_size)
-            temp_data = np.fromstring(bytebuff, dtype=np.int16)
+            temp_data = np.frombuffer(bytebuff, dtype=np.int16)
 
         try:
             if isMira:
@@ -1788,11 +1793,11 @@ def readCpx(filename, cur_coil, cur_loc):
 
         unparsed_data = fil.read(size_bytes)
         if compression_factor == 1:
-            temp_data = np.fromstring(unparsed_data, dtype=np.float32)
+            temp_data = np.frombuffer(unparsed_data, dtype=np.float32)
         elif compression_factor == 2:
-            temp_data = np.fromstring(unparsed_data, dtype=np.int16)
+            temp_data = np.frombuffer(unparsed_data, dtype=np.int16)
         elif compression_factor == 4:
-            temp_data = np.fromstring(unparsed_data, dtype=np.int8)
+            temp_data = np.frombuffer(unparsed_data, dtype=np.int8)
         temp_data.shape = [ny, nx, 2]
         complex_data = temp_data[:, :, 0] + 1j*temp_data[:, :, 1]
         data[coil, mix, dyn, card, echo, row, loc, :, :] = complex_data
