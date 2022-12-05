@@ -1,0 +1,78 @@
+import sys
+from pathlib import Path
+
+p2mDir = Path(__file__).parent.parent.absolute()
+sys.path.append(str(p2mDir))
+
+import tkinter as tk
+from tkinter import filedialog
+
+import ismrmrd as mrd
+
+import philips2mrd as p2m
+
+# Get paths
+root = tk.Tk()
+root.withdraw()
+dlName = filedialog.askopenfilename(title='Select .data file',filetypes=[("Philips .data file","*.data")])
+outDir = Path(dlName).parent.absolute()
+rlsName = filedialog.askopenfilename(title='Select .raw file',filetypes=[("Philips .raw file","*.raw")],initialdir=outDir)
+
+# Run converter
+inputData = p2m.Ph2Mrd(dlName, rlsName)
+inputData.trajtype = 2
+inputData.delay = +2.5
+mrdName, rls, dl = inputData.convert(outDir)
+dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
+
+# Modify dset
+header = mrd.xsd.CreateFromDocument(dset.read_xml_header())
+enc = header.encoding[0]
+pars = header.sequenceParameters
+exp = header.experimentalConditions
+sysInfo = header.acquisitionSystemInformation
+trajDescr = mrd.xsd.trajectoryDescriptionType()
+userParams = mrd.xsd.userParametersType()
+
+sysInfo.institutionName = 'CCHMC'
+exp.H1resonanceFrequency_Hz = 127753955
+
+if enc.trajectory == mrd.xsd.trajectoryType.RADIAL and float(rls.header['sin']['acq_gamma'][0][0]) < 42000.0: # set true flip angle for Xe acquisition
+    pars.flipAngle_deg.insert(0,0.5)
+    pars.flipAngle_deg.insert(1,15.0)
+
+if float(rls.header['sin']['acq_gamma'][0][0]) < 42000.0: 
+    dissFreq = mrd.xsd.userParameterDoubleType('dissFreq_ppm')
+    dissFreq.value = float(208)   
+    userParams.userParameterDouble.insert(0,dissFreq)
+
+orientation = mrd.xsd.userParameterStringType('orientation')
+orientation.value = 'Coronal'   
+userParams.userParameterString.insert(0,orientation)
+
+centFreq = mrd.xsd.userParameterLongType('centFreq')
+centFreq.value = float(rls.header['sin']['acq_gamma'][0][0]) / 42577.4688 * float(exp.H1resonanceFrequency_Hz)
+userParams.userParameterLong.insert(0, centFreq)
+
+dwell = mrd.xsd.userParameterDoubleType('dwell')
+dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
+trajDescr.userParameterDouble.insert(0, dwell)
+
+ramp_time = mrd.xsd.userParameterLongType('ramp_time')
+try:
+    ramp_time.value = round(float(rls.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
+    trajDescr.userParameterLong.insert(0, ramp_time)
+except:
+    pass
+
+header.userParameters = userParams
+header.sequenceParameters = pars
+header.acquisitionSystemInformation = sysInfo
+header.experimentalConditions = exp
+header.encoding[0].trajectoryDescription = trajDescr
+
+dset.write_xml_header(mrd.xsd.ToXML(header))
+
+
+# Save dset
+dset.close()
