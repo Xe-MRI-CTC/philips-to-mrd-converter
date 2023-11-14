@@ -4,6 +4,8 @@ from pathlib import Path
 p2mDir = Path(__file__).parent.parent.absolute()
 sys.path.append(str(p2mDir))
 
+import os
+import datetime
 import tkinter as tk
 from tkinter import filedialog
 
@@ -17,6 +19,8 @@ root.withdraw()
 dlName = filedialog.askopenfilename(title='Select .data file',filetypes=[("Philips .data file","*.data")])
 outDir = Path(dlName).parent.absolute()
 rlsName = filedialog.askopenfilename(title='Select .raw file',filetypes=[("Philips .raw file","*.raw")],initialdir=outDir)
+path = os.path.normpath(rlsName)
+fname = path.split(os.sep)
 
 # Run converter
 inputData = p2m.Ph2Mrd(dlName, rlsName)
@@ -27,6 +31,8 @@ dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
 
 # Modify dset
 header = mrd.xsd.CreateFromDocument(dset.read_xml_header())
+studyInfo = mrd.xsd.studyInformationType()
+subjectInfo = mrd.xsd.subjectInformationType()
 enc = header.encoding[0]
 pars = header.sequenceParameters
 exp = header.experimentalConditions
@@ -36,10 +42,17 @@ userParams = mrd.xsd.userParametersType()
 
 sysInfo.institutionName = 'CCHMC'
 exp.H1resonanceFrequency_Hz = 127753955
+sd = rls.header['sin']['start_scan_date_time'][0][0]
+studyInfo.studyDate = datetime.datetime.strptime(sd,'%d-%b-%Y').strftime('%Y-%m-%d')
+subjectInfo.patientID = fname[2]
 
 if enc.trajectory == mrd.xsd.trajectoryType.RADIAL and float(rls.header['sin']['acq_gamma'][0][0]) < 42000.0: # set true flip angle for Xe acquisition
     pars.flipAngle_deg.insert(0,0.5)
     pars.flipAngle_deg.insert(1,15.0)
+
+if rls.header['sin']['scan_name'][0][0] == 'DukeIPF_Gas_Exchange':
+    pars.TR.insert(0,float(rls.header['sin']['repetition_times'][0][0]) * 2)
+    pars.TR.insert(1,float(rls.header['sin']['repetition_times'][0][0]) * 2)
 
 if float(rls.header['sin']['acq_gamma'][0][0]) < 42000.0: 
     dissFreq = mrd.xsd.userParameterDoubleType('dissFreq_ppm')
@@ -50,9 +63,13 @@ orientation = mrd.xsd.userParameterStringType('orientation')
 orientation.value = 'Coronal'   
 userParams.userParameterString.insert(0,orientation)
 
-centFreq = mrd.xsd.userParameterLongType('centFreq')
+centFreq = mrd.xsd.userParameterLongType('129Xe_center_frequency')
 centFreq.value = float(rls.header['sin']['acq_gamma'][0][0]) / 42577.4688 * float(exp.H1resonanceFrequency_Hz)
 userParams.userParameterLong.insert(0, centFreq)
+offFreq = mrd.xsd.userParameterLongType('129Xe_dissolved_offset_frequency')
+offFreq.value = float(rls.header['sin']['acq_gamma'][0][0]) / 42577.4688 * float(exp.H1resonanceFrequency_Hz) * 208 / 1000000
+userParams.userParameterLong.insert(0, offFreq)
+
 
 dwell = mrd.xsd.userParameterDoubleType('dwell')
 dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
@@ -70,9 +87,49 @@ header.sequenceParameters = pars
 header.acquisitionSystemInformation = sysInfo
 header.experimentalConditions = exp
 header.encoding[0].trajectoryDescription = trajDescr
+header.studyInformation = studyInfo
+header.subjectInformation = subjectInfo
 
 dset.write_xml_header(mrd.xsd.ToXML(header))
 
+for acqnum in range(dset.number_of_acquisitions()):
+    acq_temp = dset.read_acquisition(acqnum)
+    if rls.header['sin']['scan_name'][0][0] == 'Duke_Calibration':
+        # First 500 are dissolved; then gas
+        if acqnum < 500:
+            acq_temp.idx.contrast = 2
+        elif acqnum >= 500:
+            acq_temp.idx.contrast = 1
+    if rls.header['sin']['scan_name'][0][0] == 'DukeIPF_Gas_Exchange':
+        # dynamic 1 = gas/1; dynamic 2 = diss/2
+        if acq_temp.idx.repetition == 0:
+            acq_temp.idx.contrast = 1
+        elif acq_temp.idx.repetition == 1:
+            acq_temp.idx.contrast = 2
+    if rls.header['sin']['scan_name'][0][0] == 'DukeIPF_Mask_Gas_Exchange':
+        acq_temp.idx.contrast = 0
+    # Replace old acq header
+    dset.write_acquisition(acq_temp,acqnum)
 
 # Save dset
 dset.close()
+
+# Rename
+if rls.header['sin']['scan_name'][0][0] == 'Duke_Calibration':
+    try:
+        os.remove(os.path.join(mrdName.parent, fname[2]+'_calibration.h5'))
+    except:
+        pass
+    os.rename(mrdName, os.path.join(mrdName.parent, fname[2]+'_calibration.h5'))
+if rls.header['sin']['scan_name'][0][0] == 'DukeIPF_Gas_Exchange':
+    try:
+        os.remove(os.path.join(mrdName.parent, fname[2]+'_dixon.h5'))
+    except:
+        pass
+    os.rename(mrdName, os.path.join(mrdName.parent, fname[2]+'_dixon.h5'))
+if rls.header['sin']['scan_name'][0][0] == 'DukeIPF_Mask_Gas_Exchange':
+    try:
+        os.remove(os.path.join(mrdName.parent, fname[2]+'_proton.h5'))
+    except:
+        pass
+    os.rename(mrdName, os.path.join(mrdName.parent, fname[2]+'_proton.h5'))
