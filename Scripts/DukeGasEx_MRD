@@ -50,6 +50,14 @@ if enc.trajectory == mrd.xsd.trajectoryType.RADIAL and float(rls.header['sin']['
     pars.flipAngle_deg.insert(0,0.5)
     pars.flipAngle_deg.insert(1,15.0)
 
+
+if rls.header['sin']['scan_name'][0][0] == 'Duke_Calibration':
+    pars.TR.insert(0,float(rls.header['sin']['repetition_times'][0][0]))
+    pars.TR.insert(1,float(rls.header['sin']['repetition_times'][0][0]))
+    pars.flipAngle_deg.insert(0,float(rls.header['sin']['flip_angles'][0][0]))
+    pars.flipAngle_deg.insert(1,float(rls.header['sin']['flip_angles'][0][0]))
+    
+
 if rls.header['sin']['scan_name'][0][0] == 'DukeIPF_Gas_Exchange':
     pars.TR.insert(0,float(rls.header['sin']['repetition_times'][0][0]) * 2)
     pars.TR.insert(1,float(rls.header['sin']['repetition_times'][0][0]) * 2)
@@ -58,15 +66,17 @@ if float(rls.header['sin']['acq_gamma'][0][0]) < 42000.0:
     dissFreq = mrd.xsd.userParameterDoubleType('dissFreq_ppm')
     dissFreq.value = float(208)   
     userParams.userParameterDouble.insert(0,dissFreq)
+else:
+    sysInfo.systemFieldStrength_T = 3.0
 
 orientation = mrd.xsd.userParameterStringType('orientation')
 orientation.value = 'Coronal'   
 userParams.userParameterString.insert(0,orientation)
 
-centFreq = mrd.xsd.userParameterLongType('129Xe_center_frequency')
+centFreq = mrd.xsd.userParameterLongType('xe_center_frequency')
 centFreq.value = float(rls.header['sin']['acq_gamma'][0][0]) / 42577.4688 * float(exp.H1resonanceFrequency_Hz)
 userParams.userParameterLong.insert(0, centFreq)
-offFreq = mrd.xsd.userParameterLongType('129Xe_dissolved_offset_frequency')
+offFreq = mrd.xsd.userParameterLongType('xe_dissolved_offset_frequency')
 offFreq.value = float(rls.header['sin']['acq_gamma'][0][0]) / 42577.4688 * float(exp.H1resonanceFrequency_Hz) * 208 / 1000000
 userParams.userParameterLong.insert(0, offFreq)
 
