@@ -113,6 +113,10 @@ class Ph2Mrd():
         numKy = dlPhData.data.shape[10]
         numKx = dlPhData.data.shape[11]
 
+        if len(set(dlPhData.header['list']['size'])) > 2:
+            numKxEcho = numKx
+            numKx = int(numKx / 2)
+
         dims = int(rlsPhData.header['sin']['encoding_dimensions'][0][0])
         try:
             traj_type = int(rlsPhData.header['sin']['k_space_traj_type'][0][0])
@@ -129,6 +133,8 @@ class Ph2Mrd():
             min_kz = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][2])
             cent_kz = 0
             max_kz = int(rlsPhData.header['sin']['non_cart_max_encoding_nrs'][0][2])
+            if numEcho > 1:
+                crds_flyback = rlsPhData.radparams['COORDS_FLYBACK']
         elif traj_type == 2:  # spiral
             crds = rlsPhData.spparams['COORDS_EXPANDED']
             min_samp = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][0])
@@ -161,14 +167,14 @@ class Ph2Mrd():
         
         # Experimental Conditions
         exp = mrd.xsd.experimentalConditionsType()
-        exp.H1resonanceFrequency_Hz = 127728000
+        exp.H1resonanceFrequency_Hz = 127728000 #hard coded to 3T
         header.experimentalConditions = exp
         
         # Acquisition System Information
         sys = mrd.xsd.acquisitionSystemInformationType()
         sys.systemVendor = 'Philips'
         sys.receiverChannels = numChan
-        if float(rlsPhData.header['sin']['acq_gamma'][0][0]) < 42000.0: #MN only offered on 3T
+        if float(rlsPhData.header['sin']['acq_gamma'][0][0]) < 42000.0: # hard coded as MN only offered on 3T
             sys.systemFieldStrength_T = 3.0
         header.acquisitionSystemInformation = sys
 
@@ -188,7 +194,7 @@ class Ph2Mrd():
         pars.TI.insert(0,float(rlsPhData.header['sin']['inversion_delays'][0][0]))
         pars.TR.insert(0,float(rlsPhData.header['sin']['repetition_times'][0][0]))
         if numEcho > 1:
-            pars.echo_spacing.insert(0,float(rlsPhData.header['sin']['echo_times'][1][0])-float(rlsPhData.header['sin']['echo_times'][0][0]))
+            pars.echo_spacing.insert(0,float(rlsPhData.header['sin']['echo_times'][0][1])-float(rlsPhData.header['sin']['echo_times'][0][0]))
         pars.flipAngle_deg.insert(0,float(rlsPhData.header['sin']['flip_angles'][0][0]))
         header.sequenceParameters = pars
         
@@ -309,7 +315,6 @@ class Ph2Mrd():
         acq_head.active_channels = numChan
         acq_head.trajectory_dimensions = dims
         acq_head.sample_time_us = float(rlsPhData.header['sin']['sample_time_interval'][0][0])
-        acq.resize(numKx, numChan)
         acq.version = 1
         acq.available_channels = numChan
         acq.center_sample = cent_samp
@@ -321,7 +326,7 @@ class Ph2Mrd():
         for a in range(dlPhData.header['list']['typ'].size):
             # Reset
             acq.clear_all_flags()
-
+            
             # Index
             acq.scan_counter = a
             acq.idx.average = int(dlPhData.header['list']['aver'][a])
@@ -340,6 +345,13 @@ class Ph2Mrd():
                 continue #dont have dimension for it            
             if int(dlPhData.header['list']['chan'][a]) > 0:
                 continue # already added by chan 0
+    
+            # Set up data
+            if acq.idx.contrast == 0:
+                nKx = numKx
+            else:
+                nKx = numKxEcho
+            acq.resize(nKx, numChan, dims)
 
             # Data
             #FROM PhilipsData: outshape_string = np.array(['ch', 'mix', 'dyn', 'card', 'ex1', 'ex2',
@@ -356,9 +368,12 @@ class Ph2Mrd():
             acq.idx.kspace_encode_step_2,#'kz',
             acq.idx.kspace_encode_step_1,#'ky',
             :]#'samp'
-            acq.data[:] = dat
+            acq.data[:] = dat[:,:nKx]
             try:
-                traj = crds[acq.idx.kspace_encode_step_2, acq.idx.kspace_encode_step_1, :, :]
+                if acq.idx.contrast == 0:
+                    traj = crds[acq.idx.kspace_encode_step_2, acq.idx.kspace_encode_step_1, :, :]
+                else:
+                    traj = crds_flyback[acq.idx.kspace_encode_step_2, acq.idx.kspace_encode_step_1, :, :]
                 acq.traj[:] = traj
             except:
                 pass
