@@ -5,29 +5,19 @@ import math
 import ismrmrd as mrd
 from xsdata.models.datatype import XmlDate, XmlTime
 
-# OS Check
-if sys.platform == "win32":
-    pass
-elif sys.platform == "darwin":
-    raise RuntimeError('ReadPhilips not compiled for Mac')
-elif sys.platform == "linux":
-    raise RuntimeError('ReadPhilips not compiled for Linux')
-else:
-    raise RuntimeError('ReadPhilips not compiled for for OS')
-
 # Python Version Check
 if sys.version_info.major != 3:
     raise RuntimeError('Requiers python 3')
 if sys.version_info.minor == 10:
-    from rp.rp310win import *
+    from rp.rp310 import *
 elif sys.version_info.minor == 9:
-    from rp.rp309win import *
+    from rp.rp309 import *
 elif sys.version_info.minor == 8:
-    from rp.rp308win import *
+    from rp.rp308 import *
 elif sys.version_info.minor == 7:
-    from rp.rp307win import *
+    from rp.rp307 import *
 elif sys.version_info.minor == 6:
-    from rp.rp306win import *
+    from rp.rp306 import *
 else:
     raise RuntimeError('ReadPhilips not compiled for this python version')
 
@@ -81,9 +71,11 @@ class Ph2Mrd():
             print('.data/.list and .raw/.lab/.sin not found.')
             raise FileNotFoundError('.data/.list and .raw/.lab/.sin not found.')
         elif dlPresent and not rlsPresent:
-            print('.raw/.lab/.sin not found. Some header info will be missing.')
+            print('.raw/.lab/.sin not found.')
+            raise FileNotFoundError('.data/.list and .raw/.lab/.sin not found.')
         elif not dlPresent and rlsPresent:
-            print('.data/.list not found. Data may be uncorrected.')
+            print('.data/.list not found.')
+            raise FileNotFoundError('.data/.list and .raw/.lab/.sin not found.')
 
         # Read in Philips data
         if dlPresent:
