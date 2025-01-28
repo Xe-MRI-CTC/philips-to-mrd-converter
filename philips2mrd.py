@@ -51,8 +51,6 @@ class Ph2Mrd():
         if dlFileName.exists():
             dlExt = dlFileName.suffix
             if str(dlExt).lower() in ['.list', '.data']:
-                mrdName = dlFileName.stem
-                mrdName = mrdName + '.h5'
                 dlPresent = True
         if rlsFileName.exists():
             rlsExt = rlsFileName.suffix
@@ -66,16 +64,16 @@ class Ph2Mrd():
         # Determine File Path
         mrdFileName = Path(outDir, mrdName)
 
-        # Check that at least one file
+        # Check that both data/list and rls files are present
         if not dlPresent and not rlsPresent:
             print('.data/.list and .raw/.lab/.sin not found.')
             raise FileNotFoundError('.data/.list and .raw/.lab/.sin not found.')
         elif dlPresent and not rlsPresent:
             print('.raw/.lab/.sin not found.')
-            raise FileNotFoundError('.data/.list and .raw/.lab/.sin not found.')
+            raise FileNotFoundError('.raw/.lab/.sin not found.')
         elif not dlPresent and rlsPresent:
             print('.data/.list not found.')
-            raise FileNotFoundError('.data/.list and .raw/.lab/.sin not found.')
+            raise FileNotFoundError('.data/.list not found.')
 
         # Read in Philips data
         if dlPresent:
@@ -105,17 +103,21 @@ class Ph2Mrd():
         numKy = dlPhData.data.shape[10]
         numKx = dlPhData.data.shape[11]
 
-        if len(set(dlPhData.header['list']['size'])) > 2:
+        dataSizes = list(set(dlPhData.header['list']['size'])) # output in order of size, assume NOI is largest
+        dataSizes = [int(x) for x in dataSizes]
+        dataSizes.sort()
+        if len(dataSizes) > 2: # if more than noise and 1 acq size, then idx 0 would be size of 1st echo/mix data, 1 would be size of 2nd echo/mix, 2 is NOI data size; NOT FOOL PROOF
             numKxEcho = numKx
-            numKx = int(numKx / 2)
+            fidEchoRatio = dataSizes[0] / dataSizes[1]
+            numKx = int(fidEchoRatio * numKxEcho)
 
+        # Extract encoding dimensions
         dims = int(rlsPhData.header['sin']['encoding_dimensions'][0][0])
         try:
             traj_type = int(rlsPhData.header['sin']['k_space_traj_type'][0][0])
         except:
             traj_type = 0
-        if traj_type == 1:  # radial
-            crds = rlsPhData.radparams['COORDS']
+        if traj_type != 0: # non cartesian
             min_samp = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][0])
             cent_samp = 0
             max_samp = int(rlsPhData.header['sin']['non_cart_max_encoding_nrs'][0][0])
@@ -125,19 +127,12 @@ class Ph2Mrd():
             min_kz = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][2])
             cent_kz = 0
             max_kz = int(rlsPhData.header['sin']['non_cart_max_encoding_nrs'][0][2])
+        if traj_type == 1:  # radial
+            crds = rlsPhData.radparams['COORDS']
             if numEcho > 1:
                 crds_flyback = rlsPhData.radparams['COORDS_FLYBACK']
         elif traj_type == 2:  # spiral
             crds = rlsPhData.spparams['COORDS_EXPANDED']
-            min_samp = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][0])
-            cent_samp = 0
-            max_samp = int(rlsPhData.header['sin']['non_cart_max_encoding_nrs'][0][0])
-            min_ky = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][1])
-            cent_ky = 0
-            max_ky = int(rlsPhData.header['sin']['non_cart_max_encoding_nrs'][0][1])
-            min_kz = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][2])
-            cent_kz = 0
-            max_kz = int(rlsPhData.header['sin']['non_cart_max_encoding_nrs'][0][2])
         else:
             min_samp = int(rlsPhData.header['sin']['min_encoding_numbers'][0][0])
             cent_samp = 0
@@ -159,22 +154,26 @@ class Ph2Mrd():
         
         # Experimental Conditions
         exp = mrd.xsd.experimentalConditionsType()
-        exp.H1resonanceFrequency_Hz = 127728000 #hard coded to 3T
+        exp.H1resonanceFrequency_Hz = np.nan # information not present in raw data
         header.experimentalConditions = exp
         
         # Acquisition System Information
         sys = mrd.xsd.acquisitionSystemInformationType()
         sys.systemVendor = 'Philips'
         sys.receiverChannels = numChan
-        if float(rlsPhData.header['sin']['acq_gamma'][0][0]) < 42000.0: # hard coded as MN only offered on 3T
-            sys.systemFieldStrength_T = 3.0
+        sys.systemFieldStrength_T = np.nan # information not present in raw data
         header.acquisitionSystemInformation = sys
+
+        # Study Information
+        scan_date = mrdName[:8]
+        scan_time = mrdName[9:15]
+        studyInfo = mrd.xsd.studyInformationType()
+        studyInfo.studyDate = XmlDate(int(scan_date[:4]), int(scan_date[4:6]), int(scan_date[6:]))
+        header.studyInformation = studyInfo
 
         # Measurement Information
         meas_info = mrd.xsd.measurementInformationType()
-        scan_date = mrdName[:8]
-        scan_time = mrdName[9:15]
-        meas_info.frameOfReferenceUID = scan_date
+        meas_info.frameOfReferenceUID = np.nan # information
         meas_info.protocolName = rlsPhData.header['sin']['scan_name'][0][0]
         meas_info.seriesDate = XmlDate(int(scan_date[:4]), int(scan_date[4:6]), int(scan_date[6:]))
         meas_info.seriesTime = XmlTime(int(scan_time[:2]), int(scan_time[2:4]), int(scan_time[4:6]))
@@ -277,7 +276,7 @@ class Ph2Mrd():
         limitsSet = mrd.xsd.limitType()
         limitsSet.minimum = 0
         limitsSet.center = round(numMix / 2)
-        limitsSet.maximum = numMix - 1
+        limitsSet.maximum = 0
         limits.set = limitsSet
 
         limitsSl = mrd.xsd.limitType()
@@ -343,6 +342,9 @@ class Ph2Mrd():
                 nKx = numKx
             else:
                 nKx = numKxEcho
+            if acq.idx.set != 0:
+                nKx = numKxEcho
+
             acq.resize(nKx, numChan, dims)
 
             # Data
