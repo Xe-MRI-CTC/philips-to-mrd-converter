@@ -60,6 +60,8 @@ class Config():
 
         if 'Duke'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # Duke protocol sets dissolved between RBC and membrane for cal and dixon
             self.xe_dissolved_offset_ppm = 208.0
+        if 'Dissolved_Xe'.lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions collect diss at 7143Hz
+            self.xe_dissolved_offset_ppm = 202.15
 
 
 
