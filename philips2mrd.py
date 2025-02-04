@@ -34,7 +34,7 @@ class Ph2Mrd():
             self.rlsName = Path('')
         
         # parameters for conversion
-        self.trajtype = 0 # Use for user added orderings of trajectories
+        self.trajorder = 0 # Use for user added orderings of trajectories
         self.delay = math.nan # Use for manual gr delays
 
     def convert(self, outDir):
@@ -81,7 +81,7 @@ class Ph2Mrd():
             dlPhData.compute()
         if rlsPresent:
             rlsPhData = PhilipsData(rlsFileName)
-            rlsPhData.trajtype = self.trajtype
+            rlsPhData.trajtype = self.trajorder
             rlsPhData.delay = self.delay
             if dlPresent:
                 rlsPhData.readParamOnly = True # use corrected data
@@ -305,7 +305,10 @@ class Ph2Mrd():
         acq_head.number_of_samples = numKx
         acq_head.active_channels = numChan
         acq_head.trajectory_dimensions = dims
-        acq_head.sample_time_us = float(rlsPhData.header['sin']['sample_time_interval'][0][0])
+        try:
+            acq_head.sample_time_us = float(rlsPhData.header['sin']['sample_time_interval'][0][0])
+        except:
+            acq_head.sample_time_us = 1.0 # n ot know so make time points = acq points
         acq.version = 1
         acq.available_channels = numChan
         acq.center_sample = cent_samp

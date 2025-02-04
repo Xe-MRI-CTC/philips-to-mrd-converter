@@ -15,7 +15,7 @@ class Config():
         self.orientation = 'Coronal'
 
         self.gr_delay = +2.5 # gradient delay used in calculating trajectories
-        self.traj_type = 2 # trajectory ordering for radial acqusitions, 2 is halton randomized spiral, 1 is 2D golden means, 0 is stock Philips
+        self.traj_order = 2 # trajectory ordering for radial acqusitions, 2 is halton randomized spiral, 1 is 2D golden means, 0 is stock Philips
 
         self.multi_echo = False
         self.ext_traj = False

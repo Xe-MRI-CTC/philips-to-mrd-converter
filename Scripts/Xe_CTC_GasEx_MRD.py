@@ -40,7 +40,7 @@ data_set_config = Config()
 
 # Run converter
 inputData = p2m.Ph2Mrd(dlName, rlsName)
-inputData.trajtype = data_set_config.traj_type
+inputData.traj_order = data_set_config.traj_order
 inputData.delay = data_set_config.gr_delay
 mrdName, rls, dl = inputData.convert(outDir)
 dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
@@ -50,11 +50,23 @@ header = mrd.xsd.CreateFromDocument(dset.read_xml_header())
 data_set_config.update(dl,rls,header)
 
 # Get path to sin file trajectories if necessary
-if data_set_config.ext_traj == True:
-    ext_coords = filedialog.askopenfilename(title='Select trajectory .h5 file',filetypes=[("Trajectory .h5 file","*.h5")],initialdir=outDir)
-    file = h5py.File(ext_coords, 'r')
-    crds = np.array(file.get('coords'))
-    crds = np.transpose(crds)
+if data_set_config.ext_traj == True:    
+    ext_coords = filedialog.askopenfilename(title='Select trajectory .sin file',filetypes=[("Trajectory .sin file","*.sin")],initialdir=outDir)
+    inputDataTraj = p2m.Ph2Mrd(dlName, ext_coords)
+    inputDataTraj.traj_order = data_set_config.traj_order
+    inputDataTraj.delay = data_set_config.gr_delay
+    mrdNameCoords, rlsCoords, _ = inputDataTraj.convert(outDir)
+    os.remove(mrdNameCoords)
+    try:
+        traj_type = int(rlsCoords.header['sin']['k_space_traj_type'][0][0])
+    except:
+        traj_type = 0
+    if traj_type == 1:  # radial
+        crds = rlsCoords.radparams['COORDS']
+        if int(rlsCoords.header['sin']['nr_echoes'][0][0]) > 1:
+            crds_flyback = rlsCoords.radparams['COORDS_FLYBACK']
+    elif traj_type == 2:  # spiral
+        crds = rlsCoords.spparams['COORDS_EXPANDED']
 
 # Get dset header
 studyInfo = header.studyInformation
@@ -78,7 +90,10 @@ userParams.userParameterString.insert(0,orientation)
 
 # Modify to xenon MRD header
 dwell = mrd.xsd.userParameterDoubleType('dwell')
-dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
+if data_set_config.ext_traj == True:
+    dwell.value = float(rlsCoords.header['sin']['sample_time_interval'][0][0])
+else:
+    dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
 trajDescr.userParameterDouble.insert(0, dwell)
 
 ramp_time = mrd.xsd.userParameterLongType('ramp_time')
@@ -179,6 +194,7 @@ for acqnum in range(dset.number_of_acquisitions()):
             else:
                 traj = crds_flyback[acq_temp.idx.kspace_encode_step_2, acq_temp.idx.kspace_encode_step_1, :, :]
             acq_temp.traj[:] = traj
+            acq_temp.sample_time_us = dwell.value
         except:
             pass
 
