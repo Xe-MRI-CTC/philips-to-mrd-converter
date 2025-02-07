@@ -30,7 +30,7 @@ class Config():
         self.xe_dissolved_offset_ppm = 218.0
 
     def update(self, dl, rls, mrdHeader): # default values hard coded for XeCTC acquisition at CCHMC
-        if 'Dissolved'.lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions use golden means
+        if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions use golden means
             self.traj_order = 1
             self.gr_delay = +0.36
 
@@ -45,13 +45,13 @@ class Config():
         if self.data_type == DataType.UTE: 
             return # skip all xenon specific parameters
 
-        if 'Dissolved'.lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions are cartesian (no trajs) for added spec
+        if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions are cartesian (no trajs) for added spec
             self.ext_traj = True
 
-        if 'Dissolved'.lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions collect diss/gas/off res
+        if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions collect diss/gas/off res
             self.contrast_order = [2, 1, 3]
 
-        if 'Dissolved'.lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions containing bonus spectra
+        if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions containing bonus spectra
             self.bonus_spec = True
 
         self.tr_factor = mrdHeader.encoding[0].encodingLimits.repetition.maximum + 1 # assume all trs the same and different frequencies are collected as different dynamics
@@ -61,7 +61,7 @@ class Config():
 
         if 'Duke'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # Duke protocol sets dissolved between RBC and membrane for cal and dixon
             self.xe_dissolved_offset_ppm = 208.0
-        if 'Dissolved'.lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions collect diss at 7143Hz
+        if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower(): # two CPIR versions collect diss at 7143Hz
             self.xe_dissolved_offset_ppm = 202.15
 
 
