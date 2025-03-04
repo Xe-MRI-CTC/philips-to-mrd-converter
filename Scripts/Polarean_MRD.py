@@ -52,14 +52,14 @@ if enc.trajectory == mrd.xsd.trajectoryType.RADIAL and float(rls.header['sin']['
     pars.flipAngle_deg.insert(1,20.0)
 
 
-if 'Polarean_calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     pars.TR.insert(0,float(rls.header['sin']['repetition_times'][0][0]))
     pars.TR.insert(1,float(rls.header['sin']['repetition_times'][0][0]))
     pars.flipAngle_deg.insert(0,float(rls.header['sin']['flip_angles'][0][0]))
     pars.flipAngle_deg.insert(1,float(rls.header['sin']['flip_angles'][0][0]))
     
 
-if 'Polarean_1ptDixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     pars.TR.insert(0,float(rls.header['sin']['repetition_times'][0][0]) * 2)
     pars.TR.insert(1,float(rls.header['sin']['repetition_times'][0][0]) * 2)
 
@@ -102,11 +102,11 @@ header.studyInformation = studyInfo
 header.subjectInformation = subjectInfo
 
 # account for switching of data labels
-if 'Polarean_calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     header.encoding[0].encodingLimits.contrast.minimum = 1
     header.encoding[0].encodingLimits.contrast.maximum = 2
     header.encoding[0].encodingLimits.contrast.center = 1
-if 'Polarean_1ptDixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     header.encoding[0].encodingLimits.contrast.minimum = 1
     header.encoding[0].encodingLimits.contrast.maximum = 2
     header.encoding[0].encodingLimits.contrast.center = 1
@@ -118,7 +118,7 @@ if 'Polarean_1ptDixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     header.encoding[0].encodingLimits.set.center = 1
 
 # account for 2nd echo in 1pt dixon
-if 'Polarean_1ptDixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     header.encoding.append(copy.deepcopy(header.encoding[0]))
     header.encoding[1].encodingLimits.kspace_encoding_step_0.minimum = -(header.encoding[1].encodingLimits.kspace_encoding_step_0.maximum+1)    
     header.encoding[0].encodedSpace.matrixSize.x = int(header.encoding[0].encodedSpace.matrixSize.x / 2)
@@ -127,13 +127,13 @@ dset.write_xml_header(mrd.xsd.ToXML(header))
 
 for acqnum in range(dset.number_of_acquisitions()):
     acq_temp = dset.read_acquisition(acqnum)
-    if 'Polarean_calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+    if 'calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
         # First 500 are dissolved; then gas
         if acqnum < 500:
             acq_temp.idx.contrast = 2
         elif acqnum >= 500:
             acq_temp.idx.contrast = 1
-    if 'Polarean_1ptDixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+    if 'Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
         # philips echoes = mrd contrasts = xemrd sets
         if acq_temp.idx.contrast == 0:
             acq_temp.idx.set = 1
@@ -146,7 +146,7 @@ for acqnum in range(dset.number_of_acquisitions()):
         elif acq_temp.idx.repetition == 1:
             acq_temp.idx.contrast = 2
             acq_temp.idx.repetition = 0
-    if 'Polarean_GX_UTE'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+    if 'UTE'.lower() in rls.header['sin']['scan_name'][0][0].lower():
         acq_temp.idx.contrast = 0
     # Replace old acq header
     dset.write_acquisition(acq_temp,acqnum)
@@ -155,19 +155,19 @@ for acqnum in range(dset.number_of_acquisitions()):
 dset.close()
 
 # Rename
-if 'Polarean_calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'calibration'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     try:
         os.remove(os.path.join(mrdName.parent, fname[2]+'_calibration.h5'))
     except:
         pass
     os.rename(mrdName, os.path.join(mrdName.parent, fname[2]+'_calibration.h5'))
-if 'Polarean_1ptDixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     try:
         os.remove(os.path.join(mrdName.parent, fname[2]+'_dixon.h5'))
     except:
         pass
     os.rename(mrdName, os.path.join(mrdName.parent, fname[2]+'_dixon.h5'))
-if 'Polarean_GX_UTE'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+if 'UTE'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     try:
         os.remove(os.path.join(mrdName.parent, fname[2]+'_proton.h5'))
     except:
