@@ -120,7 +120,7 @@ if 'Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
 # account for 2nd echo in 1pt dixon
 if 'Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
     header.encoding.append(copy.deepcopy(header.encoding[0]))
-    header.encoding[1].encodingLimits.kspace_encoding_step_0.minimum = -(header.encoding[1].encodingLimits.kspace_encoding_step_0.maximum+1)    
+    #header.encoding[1].encodingLimits.kspace_encoding_step_0.minimum = -(header.encoding[1].encodingLimits.kspace_encoding_step_0.maximum+1)    
     header.encoding[0].encodedSpace.matrixSize.x = int(header.encoding[0].encodedSpace.matrixSize.x / 2)
 
 dset.write_xml_header(mrd.xsd.ToXML(header))
@@ -138,6 +138,7 @@ for acqnum in range(dset.number_of_acquisitions()):
         if acq_temp.idx.contrast == 0:
             acq_temp.idx.set = 1
         elif acq_temp.idx.contrast == 1:
+            continue
             acq_temp.idx.set = 2
         # philips dynamics = mrd repititions = xemrd contrasts
             # 1 = gas/1; dynamic 2 = diss/2
