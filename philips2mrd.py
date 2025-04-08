@@ -125,7 +125,7 @@ class Ph2Mrd():
             min_kz = int(rlsPhData.header['sin']['non_cart_min_encoding_nrs'][0][2])
             cent_kz = 0
             max_kz = int(rlsPhData.header['sin']['non_cart_max_encoding_nrs'][0][2])
-            if numEcho > 1:
+            if False:#numEcho > 1:
                 crds_flyback = rlsPhData.radparams['COORDS_FLYBACK']
         elif traj_type == 2:  # spiral
             crds = rlsPhData.spparams['COORDS_EXPANDED']
@@ -185,7 +185,7 @@ class Ph2Mrd():
         pars.TE.insert(0,float(rlsPhData.header['sin']['echo_times'][0][0]))
         pars.TI.insert(0,float(rlsPhData.header['sin']['inversion_delays'][0][0]))
         pars.TR.insert(0,float(rlsPhData.header['sin']['repetition_times'][0][0]))
-        if numEcho > 1:
+        if False:#numEcho > 1:
             pars.echo_spacing.insert(0,float(rlsPhData.header['sin']['echo_times'][0][1])-float(rlsPhData.header['sin']['echo_times'][0][0]))
         pars.flipAngle_deg.insert(0,float(rlsPhData.header['sin']['flip_angles'][0][0]))
         header.sequenceParameters = pars
@@ -343,6 +343,7 @@ class Ph2Mrd():
                 nKx = numKx
             else:
                 nKx = numKxEcho
+                continue #ignore 2nd echo temp
             acq.resize(nKx, numChan, dims)
 
             # Data
