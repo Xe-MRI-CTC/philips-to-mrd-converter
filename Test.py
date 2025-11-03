@@ -74,3 +74,5 @@ for acqnum in range(firstacq,dset.number_of_acquisitions()):
     all_data[rep, contrast, slice, :, z, y, :] = acq.data
 
 dset.close()
+
+print("Data converted to mrd format: ", mrdName)

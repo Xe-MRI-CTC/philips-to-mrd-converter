@@ -2,24 +2,23 @@ from pathlib import Path
 import sys
 import os
 import math
+import importlib
 import ismrmrd as mrd
 from xsdata.models.datatype import XmlDate, XmlTime
 
-# Python Version Check
+# Import read philips
 if sys.version_info.major != 3:
-    raise RuntimeError('Requiers python 3')
-if sys.version_info.minor == 10:
-    from rp.rp310 import *
-elif sys.version_info.minor == 9:
-    from rp.rp309 import *
-elif sys.version_info.minor == 8:
-    from rp.rp308 import *
-elif sys.version_info.minor == 7:
-    from rp.rp307 import *
-elif sys.version_info.minor == 6:
-    from rp.rp306 import *
-else:
-    raise RuntimeError('ReadPhilips not compiled for this python version')
+    raise RuntimeError('Requires python 3')
+
+major_version = sys.version_info.major
+minor_version = sys.version_info.minor
+rp_name = f"rp.rp{major_version}{minor_version}"
+try:
+    rp = importlib.import_module(rp_name)
+except ModuleNotFoundError:
+    raise RuntimeError(f'ReadPhilips not compiled for Python {sys.version_info.major}.{sys.version_info.minor}')
+
+
 
 class Ph2Mrd():
     def __init__(self, dlName, rlsName):               
@@ -79,10 +78,10 @@ class Ph2Mrd():
 
         # Read in Philips data
         if dlPresent:
-            dlPhData = PhilipsData(dlFileName)
+            dlPhData = rp.PhilipsData(dlFileName)
             dlPhData.compute()
         if rlsPresent:
-            rlsPhData = PhilipsData(rlsFileName)
+            rlsPhData = rp.PhilipsData(rlsFileName)
             rlsPhData.trajtype = self.trajtype
             rlsPhData.delay = self.delay
             if dlPresent:
