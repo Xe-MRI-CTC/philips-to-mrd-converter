@@ -7,7 +7,8 @@ import philips2mrd as p2m
 # Set paths
 loc = Path(__file__).parent.absolute()
 dlName = loc / "rp" / "data" / "3DRadialGas-exchangeDuke" / "raw_207.data"
-rlsName = loc / "rp" / "data" / "3DRadialGas-exchangeDuke" / "20220112_113653_DukeIPF_Gas_Exchange.sin"
+rlsName = loc / "rp" / "data" / "3DRadialGas-exchangeDuke" / \
+    "20220112_113653_DukeIPF_Gas_Exchange.sin"
 outDir = loc
 
 # Run converter
@@ -45,10 +46,10 @@ else:
     ncontrasts = 1
 
 # loop through the acquisitions looking for noise scans
-firstacq=0
+firstacq = 0
 for acqnum in range(dset.number_of_acquisitions()):
     acq = dset.read_acquisition(acqnum)
-    
+
     # Currently ignoring noise scans
     if acq.isFlagSet(ismrmrd.ACQ_IS_NOISE_MEASUREMENT):
         print("Found noise scan at acq ", acqnum)
@@ -59,12 +60,13 @@ for acqnum in range(dset.number_of_acquisitions()):
         break
 
 # Initialiaze a storage array
-all_data = np.zeros((nreps, ncontrasts, nslices, ncoils, eNz, eNy, eNx), dtype=np.complex64)
+all_data = np.zeros((nreps, ncontrasts, nslices, ncoils,
+                    eNz, eNy, eNx), dtype=np.complex64)
 
 # Loop through the rest of the acquisitions and stuff
-for acqnum in range(firstacq,dset.number_of_acquisitions()):
+for acqnum in range(firstacq, dset.number_of_acquisitions()):
     acq = dset.read_acquisition(acqnum)
-  
+
     # Stuff into the buffer
     rep = acq.idx.repetition
     contrast = acq.idx.contrast
