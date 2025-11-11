@@ -1,11 +1,16 @@
 import unittest
 from philips2mrd import *
+from Scripts import XeGasExchange2XeCTCMRD
 
 
 class TestPhilips2MRD(unittest.TestCase):
     def setUp(self):
         # Set paths
         self.loc = Path(__file__).parent.absolute()
+        self.dl_spiral = self.loc / "rp" / "data" / \
+            "2DSpiralVentilationCCHMC" / "raw_004.data"
+        self.rls_spiral = self.loc / "rp" / "data" / "2DSpiralVentilationCCHMC" / \
+            "20211013_113717_CPIR_Vent_HANNING_2DSOS_WIP.sin"
         self.dl_gx = self.loc / "rp" / "data" / \
             "3DRadialGas-exchangeDuke" / "raw_207.data"
         self.rls_gx = self.loc / "rp" / "data" / "3DRadialGas-exchangeDuke" / \
@@ -14,11 +19,19 @@ class TestPhilips2MRD(unittest.TestCase):
             "3DRadialGas-exchangeCCHMC" / "raw_007.data"
         self.rls_gx_bonus = self.loc / "rp" / "data" / "3DRadialGas-exchangeCCHMC" / \
             "20191008_162511_Dissolved_Xe_20191008.sin"
+        # 2 echo
+        # floret
 
     def test_setup(self):
         result = Ph2Mrd()
         self.assertIsInstance(
             result, Ph2Mrd, "Empty Ph2Mrd Class not instantiated correctly")
+
+    def test_spiral(self):
+        result = Ph2Mrd(self.dl_spiral, self.rls_spiral)
+        self.assertIsInstance(
+            result, Ph2Mrd, "Full Ph2Mrd Class not instantiated correctly")
+        result.convert(self.loc)
 
     def test_gx_both(self):
         result = Ph2Mrd(self.dl_gx, self.rls_gx)
@@ -55,6 +68,10 @@ class TestPhilips2MRD(unittest.TestCase):
         self.assertIsInstance(
             result, Ph2Mrd, "Raw\Lab\Sin Ph2Mrd Class not instantiated correctly")
         # result.convert(self.loc)
+
+    def test_converter_function(self):
+        XeGasExchange2XeCTCMRD.Gx2XeCTCMRD(
+            data_file=self.dl_gx, raw_file=self.rls_gx, traj_file=None)
 
 
 if __name__ == '__main__':

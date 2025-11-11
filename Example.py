@@ -13,7 +13,7 @@ outDir = loc
 
 # Run converter
 inputData = p2m.Ph2Mrd(dlName, rlsName)
-inputData.trajtype = 2
+inputData.trajorder = 2
 inputData.delay = -1.25
 mrdName, rls, dl = inputData.convert(outDir)
 

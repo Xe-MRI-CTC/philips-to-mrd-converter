@@ -33,7 +33,7 @@ class Ph2Mrd():
             self.rlsName = Path('')
 
         # parameters for conversion
-        self.trajtype = 0  # Use for user added orderings of trajectories
+        self.trajorder = 0  # Use for user added orderings of trajectories
         self.delay = math.nan  # Use for manual gr delays
 
     def convert(self, outDir):
@@ -436,7 +436,7 @@ class Ph2Mrd():
             dlPhData.compute()
         if rlsPresent:
             rlsPhData = rp.PhilipsData(rlsFileName)
-            rlsPhData.trajtype = self.trajtype
+            rlsPhData.trajtype = self.trajorder
             rlsPhData.delay = self.delay
             if dlPresent:
                 rlsPhData.readParamOnly = True  # use corrected data
