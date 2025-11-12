@@ -25,6 +25,7 @@ class Config():
         self.data_type = DataType.CALIBRATION
         self.contrast_order = [1, 2]  # gas/diss
         self.bonus_spec = False
+        self.prep_pulses = False
 
         self.flip_angle_gas = 0.5
         self.flip_angle_dis = 20.0

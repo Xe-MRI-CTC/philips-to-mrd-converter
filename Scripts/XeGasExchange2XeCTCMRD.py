@@ -18,17 +18,23 @@ H1_GAMMA = 42577.4688
 
 def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     # Get paths
+    if data_file == None and raw_file == None:
+        raise RuntimeError(f'No raw data file passed. For file selection dialog, pass ''.')
     root = tk.Tk()
     root.withdraw()
-    if data_file == None:
+    if data_file == '':
         dlName = filedialog.askopenfilename(title='Select .data file', filetypes=[
             ("Philips .data file", "*.data")])
+    elif data_file == None:
+        dlName = None
     else:
         dlName = data_file
     outDir = Path(dlName).parent.absolute()
-    if raw_file == None:
+    if raw_file == '':
         rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
             ("Philips .raw file", "*.raw")], initialdir=outDir)
+    elif raw_file == None:
+        raw_file = None
     else:
         rlsName = raw_file
     path = os.path.normpath(rlsName)
@@ -289,22 +295,22 @@ if __name__ == "__main__":
         "-d", "--data_file",
         type=str,
         default=None,
-        help="The path to the data file (default: None)"
+        help="The path to the data file (default: None). Pass '' if want file dialog."
     )
     parser.add_argument(
         "-r", "--raw_file",
         type=str,
         default=None,
-        help="The path to the raw file (default: None)"
+        help="The path to the raw file (default: None). Pass '' if want file dialog."
     )
     parser.add_argument(
         "-t", "--traj_file",
         type=str,
         default=None,
-        help="The path to the trajectory file (default: None)"
+        help="The path to the trajectory file (default: None). Pass '' if want file dialog."
     )
 
-    args = parser.parse_args()
+    args, unknown_args = parser.parse_known_args()
 
     # Call the main function with parsed arguments
     Gx2XeCTCMRD(data_file=args.data_file,

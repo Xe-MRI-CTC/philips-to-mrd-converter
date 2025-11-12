@@ -282,14 +282,14 @@ class Ph2Mrd():
         encoding.encodingLimits = limits
 
     def setEncodingSpace(self, rlsPhData, data_size, encoding):
-        rfov = mrd.xsd.fieldOfViewMmType()
+        rfov = mrd.xsd.fieldOfViewMm()
         rfov.x = float(rlsPhData.header['sin']['recon_resolutions'][0]
                        [0]) * float(rlsPhData.header['sin']['voxel_sizes'][0][0])
         rfov.y = float(rlsPhData.header['sin']['recon_resolutions'][0]
                        [1]) * float(rlsPhData.header['sin']['voxel_sizes'][0][1])
         rfov.z = float(rlsPhData.header['sin']['recon_resolutions'][0]
                        [2]) * float(rlsPhData.header['sin']['voxel_sizes'][0][2])
-        efov = mrd.xsd.fieldOfViewMmType()
+        efov = mrd.xsd.fieldOfViewMm()
         efov.x = float(
             rlsPhData.header['sin']['oversample_factors'][0][0]) * float(rfov.x)
         efov.y = float(
