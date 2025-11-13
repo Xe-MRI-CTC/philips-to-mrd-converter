@@ -6,9 +6,9 @@ import philips2mrd as p2m
 
 # Set paths
 loc = Path(__file__).parent.absolute()
-dlName = loc / "rp" / "data" / "3DRadialGas-exchangeDuke" / "raw_207.data"
-rlsName = loc / "rp" / "data" / "3DRadialGas-exchangeDuke" / \
-    "20220112_113653_DukeIPF_Gas_Exchange.sin"
+dlName = loc / "rp" / "data" / "3DFLORETGas-exchange" / "raw_111.data"
+rlsName = loc / "rp" / "data" / "3DFLORETGas-exchange" / \
+    "20251002_152616_Xenon_3D_FLORET_Dixon.sin"
 outDir = loc
 
 # Run converter
@@ -66,6 +66,9 @@ all_data = np.zeros((nreps, ncontrasts, nslices, ncoils,
 # Loop through the rest of the acquisitions and stuff
 for acqnum in range(firstacq, dset.number_of_acquisitions()):
     acq = dset.read_acquisition(acqnum)
+
+    if acq.idx.contrast > 0 or acq.idx.set > 0: # Skip those which may have different readout lengths
+        continue
 
     # Stuff into the buffer
     rep = acq.idx.repetition
