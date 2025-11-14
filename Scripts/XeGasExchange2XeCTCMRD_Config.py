@@ -36,7 +36,7 @@ class Config():
     def update(self, dl, rls, mrdHeader):
         # two CPIR versions use golden means
         if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower():
-            self.traj_order = 1
+            self.trajorder = 1
             self.gr_delay = +0.36
 
         # if multiple frequencies (stored as dynamics/repitition)
@@ -52,23 +52,32 @@ class Config():
         if self.data_type == DataType.UTE:
             return  # skip all xenon specific parameters
 
-        # two CPIR versions are cartesian (no trajs) for added spec
-        if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+        # 2 Mixes required to be cartesian; none of these should be so require an acquisition without 2 mixes (bonus spec)
+        try:
+            traj_type = int(rls.header['sin']['k_space_traj_type'][0][0])
+        except:
+            traj_type = 0
+        if traj_type == 0:
             self.ext_traj = True
 
         # two CPIR versions collect diss/gas/off res
         if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower():
             self.contrast_order = [2, 1, 3]
+        # FLORET version collect diss/gas
+        if 'FLORET'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+            self.contrast_order = [2, 1]
 
-        # two CPIR versions containing bonus spectra
-        if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+        # Mixes used to store bonus spec
+        if int(rls.header['sin']['nr_mixes'][0][0]) > 1:
             self.bonus_spec = True
 
         # assume all trs the same and different frequencies are collected as different dynamics
         self.tr_factor = mrdHeader.encoding[0].encodingLimits.repetition.maximum + 1
 
-        # Duke protocol uses smaller flip angle and corresponding TR in dixon
+        # Duke and FLORET protocol uses smaller flip angle and corresponding TR in dixon
         if 'DukeIPF_Gas_Exchange'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+            self.flip_angle_dis = 15.0
+        if 'FLORET'.lower() in rls.header['sin']['scan_name'][0][0].lower():
             self.flip_angle_dis = 15.0
 
         # Duke protocol sets dissolved between RBC and membrane for cal and dixon
@@ -76,4 +85,7 @@ class Config():
             self.xe_dissolved_offset_ppm = 208.0
         # two CPIR versions collect diss at 7143Hz
         if 'Dissolved'.lower() in rls.header['sin']['scan_name'][0][0].lower() or 'CPIR'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+            self.xe_dissolved_offset_ppm = 202.15
+        # FLORET collect diss at 7143Hz
+        if 'FLORET'.lower() in rls.header['sin']['scan_name'][0][0].lower():
             self.xe_dissolved_offset_ppm = 202.15

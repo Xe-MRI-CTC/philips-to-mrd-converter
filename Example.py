@@ -67,7 +67,7 @@ all_data = np.zeros((nreps, ncontrasts, nslices, ncoils,
 for acqnum in range(firstacq, dset.number_of_acquisitions()):
     acq = dset.read_acquisition(acqnum)
 
-    if acq.idx.contrast > 0 or acq.idx.set > 0: # Skip those which may have different readout lengths
+    if acq.idx.contrast > 0 or acq.idx.set > 0:  # Skip those which may have different readout lengths
         continue
 
     # Stuff into the buffer

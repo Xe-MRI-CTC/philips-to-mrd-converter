@@ -11,6 +11,20 @@ import tkinter as tk
 import numpy as np
 import copy
 import os
+import importlib
+
+# Import read philips
+if sys.version_info.major != 3:
+    raise RuntimeError('Requires python 3')
+
+major_version = sys.version_info.major
+minor_version = sys.version_info.minor
+rp_name = f"rp.rp{major_version}{minor_version}"
+try:
+    rp = importlib.import_module(rp_name)
+except ModuleNotFoundError:
+    raise RuntimeError(
+        f'ReadPhilips not compiled for Python {sys.version_info.major}.{sys.version_info.minor}')
 
 # Constants
 H1_GAMMA = 42577.4688
@@ -18,11 +32,12 @@ H1_GAMMA = 42577.4688
 
 def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     # Get paths
-    if data_file == None and raw_file == None:
-        raise RuntimeError(f'No raw data file passed. For file selection dialog, pass ''.')
+    if data_file == '' and raw_file == '':
+        raise RuntimeError(
+            f'No raw data file passed. To use file selection dialog, pass None.')
     root = tk.Tk()
     root.withdraw()
-    if data_file == '':
+    if data_file == None:
         dlName = filedialog.askopenfilename(title='Select .data file', filetypes=[
             ("Philips .data file", "*.data")])
     elif data_file == None:
@@ -30,7 +45,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     else:
         dlName = data_file
     outDir = Path(dlName).parent.absolute()
-    if raw_file == '':
+    if raw_file == None:
         rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
             ("Philips .raw file", "*.raw")], initialdir=outDir)
     elif raw_file == None:
@@ -66,21 +81,22 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 ("Trajectory .sin file", "*.sin")], initialdir=outDir)
         else:
             ext_coords = traj_file
-        inputDataTraj = p2m.Ph2Mrd(dlName, ext_coords)
+        inputDataTraj = rp.PhilipsData(ext_coords)
         inputDataTraj.trajorder = data_set_config.trajorder
         inputDataTraj.delay = data_set_config.gr_delay
-        mrdNameCoords, rlsCoords, _ = inputDataTraj.convert(outDir)
-        os.remove(mrdNameCoords)
+        inputDataTraj.readParamOnly = True
+        inputDataTraj.compute()
         try:
-            traj_type = int(rlsCoords.header['sin']['k_space_traj_type'][0][0])
+            traj_type = int(
+                inputDataTraj.header['sin']['k_space_traj_type'][0][0])
         except:
             traj_type = 0
         if traj_type == 1:  # radial
-            crds = rlsCoords.radparams['COORDS']
-            if int(rlsCoords.header['sin']['nr_echoes'][0][0]) > 1:
-                crds_flyback = rlsCoords.radparams['COORDS_FLYBACK']
+            crds = inputDataTraj.radparams['COORDS']
+            if int(inputDataTraj.header['sin']['nr_echoes'][0][0]) > 1:
+                crds_flyback = inputDataTraj.radparams['COORDS_FLYBACK']
         elif traj_type == 2:  # spiral
-            crds = rlsCoords.spparams['COORDS_EXPANDED']
+            crds = inputDataTraj.spparams['COORDS_EXPANDED']
 
     # Get dset header
     studyInfo = header.studyInformation
@@ -106,7 +122,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     dwell = mrd.xsd.userParameterDoubleType('dwell')
     if data_set_config.ext_traj == True:
         dwell.value = float(
-            rlsCoords.header['sin']['sample_time_interval'][0][0])
+            inputDataTraj.header['sin']['sample_time_interval'][0][0])
     else:
         dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
     trajDescr.userParameterDouble.insert(0, dwell)
