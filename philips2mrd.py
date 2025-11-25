@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import os
+import datetime
 import math
 import numpy as np
 import importlib
@@ -347,6 +348,11 @@ class Ph2Mrd():
         meas_info.seriesTime = XmlTime(
             int(scan_time[:2]), int(scan_time[2:4]), int(scan_time[4:6]))
         header.measurementInformation = meas_info
+        studyInfo = mrd.xsd.studyInformationType()
+        sd = rlsPhData.header['sin']['start_scan_date_time'][0][0]
+        studyInfo.studyDate = datetime.datetime.strptime(
+            sd, '%d-%b-%Y').strftime('%Y-%m-%d')
+        header.studyInformation = studyInfo
 
     def setSystem(self, rlsPhData, data_size, header):
         sys = mrd.xsd.acquisitionSystemInformationType()

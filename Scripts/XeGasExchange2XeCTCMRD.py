@@ -128,12 +128,20 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     trajDescr.userParameterDouble.insert(0, dwell)
 
     ramp_time = mrd.xsd.userParameterLongType('ramp_time')
-    try:
-        ramp_time.value = round(
-            float(rls.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
-        trajDescr.userParameterLong.insert(0, ramp_time)
-    except:
-        pass
+    if data_set_config.ext_traj == True:
+        try:
+            ramp_time.value = round(
+                float(inputDataTraj.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
+            trajDescr.userParameterLong.insert(0, ramp_time)
+        except:
+            pass
+    else:
+        try:
+            ramp_time.value = round(
+                float(rls.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
+            trajDescr.userParameterLong.insert(0, ramp_time)
+        except:
+            pass
 
     if data_set_config.data_type == DataType.DIXON:  # set true flip angle for Xe Dixon acqs
         pars.flipAngle_deg.insert(0, data_set_config.flip_angle_gas)
@@ -148,13 +156,13 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
     if data_set_config.data_type != DataType.UTE:  # xenon needs center freq and offset
         centFreq = mrd.xsd.userParameterLongType('xe_center_frequency')
-        centFreq.value = float(
-            rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(exp.H1resonanceFrequency_Hz)
+        centFreq.value = int(np.round(
+            float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(exp.H1resonanceFrequency_Hz)))
         userParams.userParameterLong.insert(0, centFreq)
         offFreq = mrd.xsd.userParameterLongType(
             'xe_dissolved_offset_frequency')
-        offFreq.value = float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(
-            exp.H1resonanceFrequency_Hz) * data_set_config.xe_dissolved_offset_ppm / 1000000
+        offFreq.value = int(np.round(float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(
+            exp.H1resonanceFrequency_Hz) * data_set_config.xe_dissolved_offset_ppm / 1000000))
         userParams.userParameterLong.insert(0, offFreq)
 
     # Remove interleaving

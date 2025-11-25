@@ -57,7 +57,7 @@ class Config():
             traj_type = int(rls.header['sin']['k_space_traj_type'][0][0])
         except:
             traj_type = 0
-        if traj_type == 0:
+        if traj_type == 0 and not self.data_type == DataType.CALIBRATION:
             self.ext_traj = True
 
         # two CPIR versions collect diss/gas/off res
