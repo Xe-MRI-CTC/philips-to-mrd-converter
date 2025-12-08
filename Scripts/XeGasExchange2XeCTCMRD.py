@@ -128,20 +128,20 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     trajDescr.userParameterDouble.insert(0, dwell)
 
     ramp_time = mrd.xsd.userParameterLongType('ramp_time')
+    ramp_time.value = 0
     if data_set_config.ext_traj == True:
         try:
             ramp_time.value = round(
                 float(inputDataTraj.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
-            trajDescr.userParameterLong.insert(0, ramp_time)
         except:
             pass
     else:
         try:
             ramp_time.value = round(
                 float(rls.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
-            trajDescr.userParameterLong.insert(0, ramp_time)
         except:
             pass
+    trajDescr.userParameterLong.insert(0, ramp_time)
 
     if data_set_config.data_type == DataType.DIXON:  # set true flip angle for Xe Dixon acqs
         pars.flipAngle_deg.insert(0, data_set_config.flip_angle_gas)
