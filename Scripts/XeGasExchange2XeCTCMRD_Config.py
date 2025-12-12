@@ -74,10 +74,12 @@ class Config():
         # assume all trs the same and different frequencies are collected as different dynamics
         self.tr_factor = mrdHeader.encoding[0].encodingLimits.repetition.maximum + 1
 
-        # Duke and FLORET protocol uses smaller flip angle and corresponding TR in dixon
+        # Duke, FLORET, etc protocol uses smaller flip angle and corresponding TR in dixon
         if 'DukeIPF_Gas_Exchange'.lower() in rls.header['sin']['scan_name'][0][0].lower():
             self.flip_angle_dis = 15.0
         if 'FLORET'.lower() in rls.header['sin']['scan_name'][0][0].lower():
+            self.flip_angle_dis = 15.0
+        if 'Xenon_3D_radial_Dixon'.lower() in rls.header['sin']['scan_name'][0][0].lower():
             self.flip_angle_dis = 15.0
 
         # Duke protocol sets dissolved between RBC and membrane for cal and dixon
