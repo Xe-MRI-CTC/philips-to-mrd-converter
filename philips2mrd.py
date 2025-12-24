@@ -468,6 +468,7 @@ class Ph2Mrd():
         if rlsPresent:
             rlsPhData = rp.PhilipsData(rlsFileName)
             rlsPhData.trajtype = self.trajorder
+            rlsPhData.raw_corr = True
             rlsPhData.delay = self.delay
             if dlPresent:
                 rlsPhData.readParamOnly = True  # use corrected data

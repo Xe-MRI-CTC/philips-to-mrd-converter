@@ -65,7 +65,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
     # Run converter
     inputData = p2m.Ph2Mrd(dlName, rlsName)
-    inputData.trajtype = data_set_config.trajorder
+    inputData.trajorder = data_set_config.trajorder
     inputData.delay = data_set_config.gr_delay
     mrdName, rls, dl = inputData.convert(outDir)
     dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
