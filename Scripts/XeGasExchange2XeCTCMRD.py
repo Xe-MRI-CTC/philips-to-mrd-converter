@@ -65,7 +65,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
     # Run converter
     inputData = p2m.Ph2Mrd(dlName, rlsName)
-    inputData.trajorder = data_set_config.trajorder
+    inputData.trajtype = data_set_config.trajorder
     inputData.delay = data_set_config.gr_delay
     mrdName, rls, dl = inputData.convert(outDir)
     dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
@@ -82,7 +82,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         else:
             ext_coords = traj_file
         inputDataTraj = rp.PhilipsData(ext_coords)
-        inputDataTraj.trajorder = data_set_config.trajorder
+        inputDataTraj.trajtype = data_set_config.trajorder
         inputDataTraj.delay = data_set_config.gr_delay
         inputDataTraj.readParamOnly = True
         inputDataTraj.compute()
