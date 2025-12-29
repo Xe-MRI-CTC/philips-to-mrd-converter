@@ -143,6 +143,16 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             pass
     trajDescr.userParameterLong.insert(0, ramp_time)
 
+    # Determine Gas contamination removal
+    if data_set_config.data_type == DataType.DIXON:
+        if data_set_config.gas_contam_removal == True:
+            if data_set_config.bonus_spec == False:
+                print('Contamination removal not possible without bonus spectra - Turning it to false')
+                data_set_config.gas_contam_removal = False
+        gas_contam_removed = mrd.xsd.userParameterLongType('gas_contam_removed')
+        gas_contam_removed.value = data_set_config.gas_contam_removal
+        userParams.userParameterString.insert(0, gas_contam_removed)
+
     if data_set_config.data_type == DataType.DIXON:  # set true flip angle for Xe Dixon acqs
         pars.flipAngle_deg.insert(0, data_set_config.flip_angle_gas)
         pars.flipAngle_deg.insert(1, data_set_config.flip_angle_dis)
@@ -234,9 +244,39 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     # finish header update
     dset.write_xml_header(mrd.xsd.ToXML(header))
 
-    # update data headers
+    # Create data matrices
+    Nkx = header.encoding[0].encodingLimits.kspace_encoding_step_0.maximum - header.encoding[0].encodingLimits.kspace_encoding_step_0.minimum + 1
+    acqs = data = contrasts = sets = kzs = kys = kxs = [None] * dset.number_of_acquisitions()
+
+    # Read/store all data/labels for ease/simplicity
     for acqnum in range(dset.number_of_acquisitions()):
         acq_temp = dset.read_acquisition(acqnum)
+        acqs[acqnum] = acq_temp
+        data[acqnum] = acq_temp.data
+        contrasts[acqnum] = acq_temp.idx.contrast
+        sets[acqnum] = acq_temp.idx.set
+        kzs[acqnum] = acq_temp.idx.kspace_encode_step_2
+        kys[acqnum] = acq_temp.idx.kspace_encode_step_1
+        kxs[acqnum] = acq_temp.number_of_samples
+
+    # Get info necessary for gas contamination removal
+    if data_set_config.gas_contam_removal == True:
+        return
+        # see if last projection
+        # see if first 
+        # see if 2nd mix (scale correction)
+        # calculate beta [(last gas phase proj k0 / gas phase area in bonus spec) * (1 / cos(gas flip angle))]
+        # calculate dTheta [gas phase in spectra - gas phase in image] 
+        # calcute readout times and frequency offset
+        # caculate full readout scaling
+
+    # update data and headers
+    # Version   |   
+    # Philips:  | location | average | extr1   | mix      | card  | dynamic    | echo     | kz | ky | kx
+    # MRD:      | slice    | average | segment | set      | phase | repetition | contrast | kz | ky | kx
+    # XeCTCMRD: | N/A      | N/A     | N/A     | spec/img | N/A   | contrast   | set      | kz | ky | kx
+    for acqnum in range(len(acqs)):
+        acq_temp = acqs[acqnum]
 
         # set flag for bonus spectra (prior to reusing set for echoes)
         if data_set_config.bonus_spec == True:

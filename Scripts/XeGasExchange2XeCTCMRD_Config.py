@@ -25,6 +25,7 @@ class Config():
         self.data_type = DataType.CALIBRATION
         self.contrast_order = [1, 2]  # gas/diss
         self.bonus_spec = False
+        self.gas_contam_removal = False
         self.prep_pulses = False
 
         self.flip_angle_gas = 0.5
@@ -70,6 +71,7 @@ class Config():
         # Mixes used to store bonus spec
         if int(rls.header['sin']['nr_mixes'][0][0]) > 1:
             self.bonus_spec = True
+            self.gas_contam_removal = True # default to true if bonus spec present
 
         # assume all trs the same and different frequencies are collected as different dynamics
         self.tr_factor = mrdHeader.encoding[0].encodingLimits.repetition.maximum + 1
