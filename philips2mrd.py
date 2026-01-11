@@ -7,7 +7,7 @@ import numpy as np
 import importlib
 import ismrmrd as mrd
 from xsdata.models.datatype import XmlDate, XmlTime
-
+ 
 # Import read philips
 if sys.version_info.major != 3:
     raise RuntimeError('Requires python 3')
