@@ -33,20 +33,6 @@ except ModuleNotFoundError:
 # Constants
 H1_GAMMA = 42577.4688
 
-def make_filtered_mrd(src_path, dst_path, n_acq_use):
-    src = mrd.Dataset(str(src_path), "dataset", create_if_needed=False)
-    dst = mrd.Dataset(str(dst_path), "dataset", create_if_needed=True)
-
-    # copy xml
-    dst.write_xml_header(src.read_xml_header())
-
-    # copy only desired acquisitions
-    for acqnum in range(n_acq_use):
-        dst.append_acquisition(src.read_acquisition(acqnum))
-
-    src.close()
-    dst.close()
-
 def make_filtered_mrd_by_indices(src_path, dst_path, keep_indices):
     src = mrd.Dataset(str(src_path), "dataset", create_if_needed=False)
     dst = mrd.Dataset(str(dst_path), "dataset", create_if_needed=True)
@@ -58,7 +44,6 @@ def make_filtered_mrd_by_indices(src_path, dst_path, keep_indices):
 
     src.close()
     dst.close()
-
 
 def find_bonus_spectra_index(acqs, min_ratio=2.0):
     """
@@ -158,7 +143,6 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     else:
         rlsName = raw_file
 
-
     path = os.path.normpath(rlsName)
     fname = path.split(os.sep)
     try:
@@ -186,13 +170,21 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     print("n_acq_total =", n_acq_total, "n_acq_use =", n_acq_use,
         "exclude_bonus_spec =", data_set_config.exclude_bonus_spec)
 
-    # If requested, create a new MRD file that excludes the last acquisition
+    # If requested, create a new MRD file that excludes the bonus_spec acquisition
     if data_set_config.exclude_bonus_spec:
         mrdPath = Path(mrdName)
         filteredPath = mrdPath.with_name(mrdPath.stem + "_noBonus.h5")
 
         # build filtered file
-        make_filtered_mrd(mrdPath, filteredPath, n_acq_use)
+        acqs_init      = [None] * n_acq_use
+        for acqnum in range(n_acq_use):
+            acq_temp = dset.read_acquisition(acqnum)
+            acqs_init[acqnum] = acq_temp
+        
+        bonus_idx = find_bonus_spectra_index(acqs_init)
+        print('bonus_idx = ', bonus_idx)
+        keep_idx = [i for i in range(dset.number_of_acquisitions()) if i != bonus_idx]
+        make_filtered_mrd_by_indices(mrdPath, filteredPath, keep_idx)
 
         # close original and reopen filtered for the rest of the pipeline
         dset.close()
@@ -434,8 +426,8 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         # a) identify bonus spectra acquisition 
         bonus_fid = np.squeeze(bonus_acq.data) 
         bonus_fid = bonus_fid.reshape(-1)     
-
-        dwell_s = float(dwell.value) * 1e-6 
+        print('bonus_fid size =', bonus_fid.size)
+        dwell_s = float(dwell.value) * 1e-3 
         t = np.arange(bonus_fid.size) * dwell_s
 
         # b) fit dissolved spectra 
@@ -483,11 +475,22 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
             # --- Plot (same style you showed) ---
             fig, ax3 = plt.subplots()
-            ax3.plot(f, np.flip(DisspectralDomainSignal), 'bo', markerfacecolor='b')
-            ax3.plot(f, np.flip(DissFit), '-r')
-            ax3.set_title('Dissolved Phase Spectrum')
+
+            # ---- select central 25% of the spectrum ----
+            N = len(f)
+            center = N // 2
+            half_width = int(0.25 * N / 2)   # 25% total → 12.5% on each side
+
+            idx = slice(center - half_width, center + half_width)
+
+            # ---- plot only central portion ----
+            ax3.plot(f[idx], np.flip(DisspectralDomainSignal)[idx], 'bo', markerfacecolor='b')
+            ax3.plot(f[idx], np.flip(DissFit)[idx], '-r')
+
+            ax3.set_title('Dissolved Phase Spectrum (Central 25%)')
             ax3.set_xlabel('Frequency (Hz)')
             ax3.set_ylabel('NMR Signal Intensity (a.u)')
+
             plt.tight_layout()
             plt.show()
 
