@@ -20,13 +20,13 @@ class Config():
         self.trajorder = 2  # trajectory ordering for radial acqusitions, 2 is halton randomized spiral, 1 is 2D golden means, 0 is stock Philips
 
         self.multi_echo = False
-        self.ext_traj = False
+        self.ext_traj = True
 
         self.data_type = DataType.CALIBRATION
         self.contrast_order = [1, 2]  # gas/diss
-        self.bonus_spec = False
+        self.bonus_spec = True
         self.gas_contam_removal = True 
-        self.exclude_bonus_spec = True 
+        self.exclude_bonus_spec = False 
         if self.gas_contam_removal:
             self.exclude_bonus_spec = False
         self.prep_pulses = False

@@ -1,3 +1,5 @@
+
+
 import sys  # noqa: E402
 from pathlib import Path  # noqa: E402
 p2mDir = Path(__file__).parent.parent.absolute()  # noqa: E402
@@ -11,6 +13,7 @@ import tkinter as tk
 import numpy as np
 import copy
 import os
+import math
 import importlib
 from nmr_timefit import NMR_TimeFit
 from nmr_mix import NMR_Mix
@@ -45,28 +48,161 @@ def make_filtered_mrd_by_indices(src_path, dst_path, keep_indices):
     src.close()
     dst.close()
 
-def find_bonus_spectra_index(acqs, min_ratio=2.0):
+def find_odd_spectra_indices(acqs, min_ratio=2.0):
     """
-    Bonus spectra has a much larger number_of_samples than imaging projections.
-    Returns index of the first acquisition that is >= min_ratio * median(others).
+    Identify 'odd' acquisitions by number_of_samples (vector size).
+
+    Strategy
+    - Compute number_of_samples for each acquisition.
+    - Split into the dominant (larger count) group and the minority group based on frequency.
+      (Assumption: imaging readouts dominate; bonus spectra are few and have larger size.)
+    - Use the dominant group's median as the reference.
+    - Flag odds as those that deviate strongly from that median:
+        - large odds: >= min_ratio * median(dominant)
+        - small odds: <= median(dominant) / min_ratio  (kept for completeness)
+
+    Returns
+    - odd_indices: list[int] of all odd acquisitions
+    - info: dict with counts/medians for debugging
     """
-    ns = np.array([a.number_of_samples for a in acqs], dtype=float)
-    med = np.median(ns)
-    # candidates: clearly larger than typical imaging readout
-    cand = np.where(ns >= (min_ratio * med))[0]
-    return int(cand[0]) if cand.size else None
+    ns = np.array([int(a.number_of_samples) for a in acqs], dtype=int)
 
-def movmean(x: np.ndarray, n: int) -> np.ndarray:
-    """Compute moving mean of x over n points.
+    # 1) Find unique sizes + counts
+    sizes, counts = np.unique(ns, return_counts=True)
+    if sizes.size <= 1:
+        return [], {
+            "unique_sizes": sizes.tolist(),
+            "counts": counts.tolist(),
+            "median_ref": float(np.median(ns)),
+            "n_odd": 0
+        }
 
+    # 2) Dominant size group = the most frequent size (assumed "normal")
+    dominant_size = int(sizes[np.argmax(counts)])
+    dominant_mask = (ns == dominant_size)
+
+    # 3) Reference median from the dominant group (robust, and uses the majority)
+    ref_med = float(np.median(ns[dominant_mask]))
+
+    # 4) Odd candidates: anything that differs in size AND is far from ref median
+    different_size = (ns != dominant_size)
+    odd_large = different_size & (ns >= int(np.ceil(min_ratio * ref_med)))
+    odd_small = different_size & (ns <= int(np.floor(ref_med / min_ratio)))
+
+    odd_mask = odd_large | odd_small
+    odd_indices = np.where(odd_mask)[0].tolist()
+
+    info = {
+        "unique_sizes": sizes.tolist(),
+        "counts": counts.tolist(),
+        "dominant_size": dominant_size,
+        "n_dominant": int(dominant_mask.sum()),
+        "n_different_size": int(different_size.sum()),
+        "median_ref": ref_med,
+        "n_odd": int(len(odd_indices)),
+        "odd_indices": odd_indices,
+        "odd_sizes": ns[odd_mask].tolist(),
+    }
+    return odd_indices, info
+
+def plot_complex_spectra_panels(data, fs=None, do_fft=False, suptitle='Spectra'):
+    """
+    data : complex array (n_spectra, N) or (N, n_spectra)
+    fs   : sampling frequency (Hz) if FFT desired
+    do_fft : apply FFT before plotting
+    """
+
+    x = np.asarray(data)
+
+    # Ensure shape = (n_spectra, N)
+    if x.ndim != 2:
+        raise ValueError("Input must be 2D array")
+
+    if x.shape[0] < x.shape[1]:
+        n_spec = x.shape[0]
+    else:
+        x = x.T
+        n_spec = x.shape[0]
+
+    # FFT if needed
+    if do_fft:
+        x = np.fft.fftshift(np.fft.fft(x, axis=1), axes=1)
+
+    N = x.shape[1]
+
+    # X axis
+    if do_fft and fs is not None:
+        xx = np.fft.fftshift(np.fft.fftfreq(N, d=1/fs))
+        xlabel = 'Frequency (Hz)'
+    else:
+        xx = np.arange(N)
+        xlabel = 'Sample'
+
+    # Determine subplot grid
+    ncols = min(3, n_spec)
+    nrows = math.ceil(n_spec / ncols)
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 3*nrows), squeeze=False)
+
+    for i in range(n_spec):
+        r = i // ncols
+        c = i % ncols
+
+        ax = axes[r, c]
+
+        ax.plot(xx, np.abs(x[i]), label='Magnitude')
+        ax.set_title(f"{'Pre' if i < n_spec/2 else 'Post'} {i+1}")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel('|S|')
+        ax.grid(alpha=0.3)
+
+    # Remove unused panels
+    for j in range(i+1, nrows*ncols):
+        r = j // ncols
+        c = j % ncols
+        fig.delaxes(axes[r][c])
+
+    fig.suptitle(suptitle)
+    plt.tight_layout()
+    plt.show()
+
+def movmean2(x: np.ndarray, n: int) -> np.ndarray:
+    ''' 
+    Compute moving mean of x over n points.
     Args:
         x (np.ndarray): input data of shape (n,)
         n (int): number of points to average over
-
     Returns:
         np.ndarray: moving mean of shape (n,)
-    """
+    '''
     return np.convolve(x, np.ones((n,)) / n, mode="same")
+
+
+def movmean(x: np.ndarray, n: int, axis: int = 0) -> np.ndarray:
+    """
+    Moving mean along a given axis, MATLAB-like 'movmean(..., n)'.
+    Uses convolution with 'same' length along that axis.
+    Works for complex arrays and N-D arrays.
+    """
+    x = np.asarray(x)
+    if n <= 1:
+        return x
+
+    kernel = np.ones(n, dtype=np.float64) / n
+
+    # Apply 1D convolution along the specified axis
+    return np.apply_along_axis(lambda v: np.convolve(v, kernel, mode="same"), axis, x)
+
+def downsample(x: np.ndarray, factor: int, axis: int = 0) -> np.ndarray:
+    """
+    Downsample by integer factor along a specified axis (MATLAB downsample behavior).
+    """
+    if factor <= 1:
+        return x
+    slc = [slice(None)] * x.ndim
+    slc[axis] = slice(None, None, factor)
+    return x[tuple(slc)]
+
 
 def gas_phase_contamination_removal(
     data_dissolved: np.ndarray,
@@ -77,12 +213,11 @@ def gas_phase_contamination_removal(
     area_gas_acq_diss: float,
     fa_gas: float,
 ) -> np.ndarray:
-    """Remove gas phase contamination in dissolved k-space.
-
+    '''
+    Remove gas phase contamination in dissolved k-space.
     Takes gas phase k-space and modifies it using NMR fits and gas phase k0
     to produce the expected gas phase contamination k-space data which is
     then removed from the initial contaminated dissolved phase k-space.
-
     Args:
         data_dissolved (np.ndarray): dissolved k-space data of shape
             (n_projections, n_points)
@@ -99,7 +234,7 @@ def gas_phase_contamination_removal(
         Gas phase corrected dissolved k-space data of shape (n_projections, n_points)
     Author: Matt Willmering
     Paper: https://pubmed.ncbi.nlm.nih.gov/33665905/
-    """
+    ''' 
     # step 0: calculate parameters
     arr_t = sample_time * np.arange(data_dissolved.shape[1])
     # step 1: modulate contamination (gas) to dissolved frequency - first order
@@ -118,6 +253,31 @@ def gas_phase_contamination_removal(
     )
     # step 4: return subtracted contamination
     return data_dissolved - contamination_kspace3
+
+def make_timefit_x0_feasible(obj, lb, ub):
+    """
+    Modifies obj.area/freq/fwhmL/fwhmG/phase so that the flattened x0
+    lies inside [lb, ub]. Uses small eps offsets to avoid equality issues.
+    """
+    eps = 1e-12
+
+    x0 = np.array([obj.area, obj.freq, obj.fwhmL, obj.fwhmG, obj.phase]).flatten()
+
+    # If you used epsilon bounds for "fixed" params, keep x0 below ub-eps
+    x0 = np.minimum(np.maximum(x0, lb), ub)
+    # Nudge off exact upper bound just in case (helps with inf not needed)
+    finite_ub = np.isfinite(ub)
+    x0[finite_ub] = np.minimum(x0[finite_ub], ub[finite_ub] - eps)
+
+    # Write back into the object (order must match x0 construction)
+    x0m = x0.reshape(5, -1)   # [area; freq; fwhmL; fwhmG; phase] each length 3
+    obj.area  = x0m[0, :]
+    obj.freq  = x0m[1, :]
+    obj.fwhmL = x0m[2, :]
+    obj.fwhmG = x0m[3, :]
+    obj.phase = x0m[4, :]
+
+    return obj
 
 def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     # Get paths
@@ -166,7 +326,15 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     data_set_config.update(dl, rls, header)
  
     n_acq_total = dset.number_of_acquisitions()
-    n_acq_use = n_acq_total - (1 if data_set_config.exclude_bonus_spec else 0)
+    
+    acqs_init      = [None] * n_acq_total
+    for acqnum in range(n_acq_total):
+        acq_temp = dset.read_acquisition(acqnum)
+        acqs_init[acqnum] = acq_temp
+    bonus_idx, bonus_info = find_odd_spectra_indices(acqs_init)
+    print('bonus_idx = ', bonus_idx)
+    
+    n_acq_use = n_acq_total - (len(bonus_idx) if data_set_config.exclude_bonus_spec else 0)
     print("n_acq_total =", n_acq_total, "n_acq_use =", n_acq_use,
         "exclude_bonus_spec =", data_set_config.exclude_bonus_spec)
 
@@ -176,21 +344,15 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         filteredPath = mrdPath.with_name(mrdPath.stem + "_noBonus.h5")
 
         # build filtered file
-        acqs_init      = [None] * n_acq_use
-        for acqnum in range(n_acq_use):
-            acq_temp = dset.read_acquisition(acqnum)
-            acqs_init[acqnum] = acq_temp
-        
-        bonus_idx = find_bonus_spectra_index(acqs_init)
-        print('bonus_idx = ', bonus_idx)
-        keep_idx = [i for i in range(dset.number_of_acquisitions()) if i != bonus_idx]
+        keep_idx = [i for i in range(dset.number_of_acquisitions()) 
+                    if i not in bonus_idx]
         make_filtered_mrd_by_indices(mrdPath, filteredPath, keep_idx)
 
         # close original and reopen filtered for the rest of the pipeline
         dset.close()
         mrdName = filteredPath
         dset = mrd.Dataset(str(mrdName), "dataset", create_if_needed=False)
-
+        data_set_config.gas_contam_removal = False
         print("Using filtered MRD:", mrdName, "acqs =", dset.number_of_acquisitions())
     else:
         print("Using original MRD:", mrdName, "acqs =", dset.number_of_acquisitions())
@@ -416,110 +578,249 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
       # caculate full readout scaling
     ''' 
     # ---------------- Gas contamination removal ----------------
-    bonus_idx = find_bonus_spectra_index(acqs)
+    bonus_idx, bonus_info = find_odd_spectra_indices(acqs)
+    print('bonus_idx = ', bonus_idx)
     if bonus_idx is None:
         print("No bonus spectra found by size; skipping gas contamination removal.")
         data_set_config.gas_contam_removal = False
     else:
-        bonus_acq = acqs[bonus_idx]    
+        bonus_acqs = [acqs[int(i)] for i in bonus_idx]   
     if data_set_config.gas_contam_removal:
         # a) identify bonus spectra acquisition 
-        bonus_fid = np.squeeze(bonus_acq.data) 
-        bonus_fid = bonus_fid.reshape(-1)     
-        print('bonus_fid size =', bonus_fid.size)
-        dwell_s = float(dwell.value) * 1e-3 
-        t = np.arange(bonus_fid.size) * dwell_s
-
-        # b) fit dissolved spectra 
+        bonus_fids = [np.squeeze(acq.data) for acq in bonus_acqs]
+        # Convert list to numpy array
+        bonus_fid = np.array(bonus_fids)
         plot_fit = True
-        disData1_avg = bonus_fid
-        fitObj = NMR_TimeFit(
-            ydata=disData1_avg,
-            tdata=t,
-            area=np.array([1, 1, 1]),
-            freq=np.array([0, -720, -7700]),
-            fwhmL=np.array([250, 200, 30]),
-            fwhmG=np.array([0, 200, 0]),
-            phase=np.array([0, 0, 0]),
-            line_broadening=0,
-            zeropad_size=np.size(t),
-            method="voigt"
-        )
-        disfitObj = fitObj.calc_time_fit_residual((-np.inf, np.inf)).T  # [nComp, nParams]
+        if plot_fit:
+            plot_complex_spectra_panels(bonus_fid, do_fft=False, suptitle='Bonus Spectra')
+   
+        print('bonus_fid size =', bonus_fid[0].size)
+        dwell_s = float(dwell.value) * 1e-6 
+        
+        PreDissolvedFID = bonus_fid[0]
+        PostDissolvedFID = bonus_fid[3]
+        PreGasFID = bonus_fid[1]
+        PostGasFID = bonus_fid[4]
+
+        # ---- K-space ----
+        gas_rep  = data_set_config.contrast_order.index(1)   # repetition that maps to Xe gas (contrast=1)
+        diss_rep = data_set_config.contrast_order.index(2)   # repetition that maps to Xe dissolved (contrast=2)
+
+        # bonus_idx is a list -> use a set for O(1) membership
+        bonus_set = set(int(i) for i in bonus_idx)
+
+        gas_acq_idx  = [i for i, a in enumerate(acqs)
+                        if (i not in bonus_set) and (a.idx.repetition == gas_rep)]
+
+        diss_acq_idx = [i for i, a in enumerate(acqs)
+                        if (i not in bonus_set) and (a.idx.repetition == diss_rep)]
+
+        GasKSpaceInit  = np.stack([np.squeeze(acqs[i].data).reshape(-1) for i in gas_acq_idx], axis=1)   # [RO, Nproj]
+        DissolvedKSpaceInit = np.stack([np.squeeze(acqs[i].data).reshape(-1) for i in diss_acq_idx], axis=1)  # [RO, Nproj]
+
+        OvsFactor = 4
+        extraOvs = True
+        if extraOvs:
+            # ---- Dissolved FIDs ----
+            PreDissolvedFID  = movmean(PreDissolvedFID, OvsFactor)
+            PreDissolvedFID  = PreDissolvedFID[::OvsFactor]
+
+            PostDissolvedFID = movmean(PostDissolvedFID, OvsFactor)
+            PostDissolvedFID = PostDissolvedFID[::OvsFactor]
+
+            # ---- Gas FIDs ----
+            PreGasFID  = movmean(PreGasFID, OvsFactor)
+            PreGasFID  = PreGasFID[::OvsFactor]
+
+            PostGasFID = movmean(PostGasFID, OvsFactor)
+            PostGasFID = PostGasFID[::OvsFactor]
+            
+            # ---- K-space ----
+            DissolvedKSpaceInit = movmean(DissolvedKSpaceInit, OvsFactor)
+            DissolvedKSpaceInit = DissolvedKSpaceInit[::OvsFactor]
+
+            GasKSpaceInit = movmean(GasKSpaceInit, OvsFactor)
+            GasKSpaceInit = GasKSpaceInit[::OvsFactor]
+
+            # ---- Adjust dwell time ----
+            #dwell_s = dwell_s * OvsFactor            
 
         if plot_fit:
-            # --- Measured dissolved spectrum (magnitude) ---
-            DisspectralDomainSignal = np.abs(dwell_s * fftshift(fft(disData1_avg)))
+            # Ensure at least 3 projections exist
+            n_proj_gas = min(3, GasKSpaceInit.shape[1])
+            n_proj_diss = min(3, DissolvedKSpaceInit.shape[1])
 
-            # Frequency axis (Hz)
-            N = disData1_avg.size
-            f = np.linspace(-0.5, 0.5, N + 1) / dwell_s
-            f = f[:-1]
+            x_gas = np.arange(GasKSpaceInit.shape[0])
+            x_diss = np.arange(DissolvedKSpaceInit.shape[0])
 
-            # --- Build fitted dissolved spectrum from disfitObj ---
-            # disfitObj rows: [area, freq, fwhmL, fwhmG, phase] per component
-            DisSpectra = NMR_Mix(
-                area=disfitObj[:, 0],
-                freq=disfitObj[:, 1],
-                phase=disfitObj[:, 4],
-                fwhmL=disfitObj[:, 2],
-                fwhmG=disfitObj[:, 3],
-                method="voigt",
-            )
+            fig, axes = plt.subplots(2, 3, figsize=(15, 6), sharex=False)
 
-            # Time-domain fit (sum components), then FFT -> spectral magnitude
-            time = dwell_s * np.arange(N)
-            DissFit_td = DisSpectra.calcComponentTimeDomainSignal(time)         # [N, nComp] complex
-            DissFit_spec = dwell_s * fftshift(fft(DissFit_td, axis=0), axes=0)  # [N, nComp] complex
-            DissFit = np.abs(np.sum(DissFit_spec, axis=1))                      # [N] magnitude
+            for i in range(n_proj_gas):
+                axes[0, i].plot(x_gas, np.abs(GasKSpaceInit[:, i]), linewidth=1.5)
+                axes[0, i].set_title(f'Gas Projection {i+1}')
+                axes[0, i].set_ylabel('|Signal|')
+                axes[0, i].grid(alpha=0.3)
 
-            # --- Plot (same style you showed) ---
-            fig, ax3 = plt.subplots()
+            for i in range(n_proj_diss):
+                axes[1, i].plot(x_diss, np.abs(DissolvedKSpaceInit[:, i]), linewidth=1.5)
+                axes[1, i].set_title(f'Dissolved Projection {i+1}')
+                axes[1, i].set_ylabel('|Signal|')
+                axes[1, i].set_xlabel('Readout Index')
+                axes[1, i].grid(alpha=0.3)
 
-            # ---- select central 25% of the spectrum ----
-            N = len(f)
-            center = N // 2
-            half_width = int(0.25 * N / 2)   # 25% total → 12.5% on each side
+            plt.tight_layout()
+            plt.show()
+            
+            DissolvedKSpaceInit = movmean(DissolvedKSpaceInit, OvsFactor)
+            DissolvedKSpaceInit = DissolvedKSpaceInit[::OvsFactor]
 
-            idx = slice(center - half_width, center + half_width)
+            GasKSpaceInit = movmean(GasKSpaceInit, OvsFactor)
+            GasKSpaceInit = GasKSpaceInit[::OvsFactor]
 
-            # ---- plot only central portion ----
-            ax3.plot(f[idx], np.flip(DisspectralDomainSignal)[idx], 'bo', markerfacecolor='b')
-            ax3.plot(f[idx], np.flip(DissFit)[idx], '-r')
+            # ---- Adjust dwell time ----
+            #dwell_s = dwell_s * OvsFactor
 
-            ax3.set_title('Dissolved Phase Spectrum (Central 25%)')
-            ax3.set_xlabel('Frequency (Hz)')
-            ax3.set_ylabel('NMR Signal Intensity (a.u)')
+
+            # ---- Attenuation Correction ----
+            # MATLAB: PostGasFID(1,1) and GasKSpaceInit(1,end,end)
+
+            scaleFac = np.abs(PostGasFID[0]) / np.abs(GasKSpaceInit[0, -1, -1])
+                
+        scaleFac = np.abs(PostGasFID[0]) / np.abs(GasKSpaceInit[0, -1])
+        scaleFac1dis = np.abs(PostDissolvedFID[0]) / np.abs(DissolvedKSpaceInit[0, -1])
+
+        DissolvedKSpaceInit = DissolvedKSpaceInit * scaleFac
+        GasKSpaceInit = GasKSpaceInit * scaleFac
+
+        time = dwell_s * np.arange(len(PostDissolvedFID), dtype=float)
+
+        # -------------------- Initial guesses --------------------
+        A0 = np.abs(PostDissolvedFID[0])  # MATLAB PostDissolvedFID(1)
+
+        area_guess  = np.array([0.27*A0, 1.0*A0, 0.10*A0], dtype=float)
+        freq_guess  = np.array([534.0, -126.0, -7084.0], dtype=float)
+
+        fwhmL_guess = np.array([300.0, 273.0, 44.0], dtype=float)
+        fwhmG_guess = np.array([0.0, 275.0, 0.0], dtype=float)
+
+        phase_guess = np.array([-95.0, 151.0, 9.0], dtype=float)  # degrees (your code uses degrees)
+
+        # -------------------- Bounds  --------------------
+        area_lb  = np.array([0.0, 0.0, 0.0], dtype=float)
+        area_ub  = np.array([1e10, 1e10, 1e10], dtype=float)
+
+        freq_lb  = np.array([500.0, -2000.0, -12000.0], dtype=float)
+        freq_ub  = np.array([2000.0, 0.0, -4000.0], dtype=float)
+
+        fwhmL_lb = np.array([0.0, 0.0, 0.0], dtype=float)
+        fwhmL_ub = np.array([np.inf, np.inf, np.inf], dtype=float)
+
+        eps = 1e-12  # small number so SciPy sees lb < ub, but parameter is essentially fixed
+
+        fwhmG_lb = np.array([0.0, 0.0, 0.0], dtype=float)
+        fwhmG_ub = np.array([eps, np.inf, eps], dtype=float)  # instead of [0, inf, 0]
+
+        phase_lb = np.array([-np.inf, -np.inf, -np.inf], dtype=float)
+        phase_ub = np.array([ np.inf,  np.inf,  np.inf], dtype=float)
+
+        lb = np.concatenate([area_lb, freq_lb, fwhmL_lb, fwhmG_lb, phase_lb])
+        ub = np.concatenate([area_ub, freq_ub, fwhmL_ub, fwhmG_ub, phase_ub])
+
+        # ensure feasibility before fitting
+        PrependedDissolvedNMRFit = make_timefit_x0_feasible(PrependedDissolvedNMRFit, lb, ub)
+        PrependedDissolvedNMRFit.fit_time_signal_residual(bounds=(lb, ub))
+        
+        # -------------------- 2) Fit appended dissolved (Post), seeded by Pre-fit --------------------
+        AppendedDissolvedNMRFit = NMR_TimeFit(
+            ydata=PostDissolvedFID,
+            tdata=time,
+            area=area_guess,
+            freq=PrependedDissolvedNMRFit.freq,
+            fwhmL=PrependedDissolvedNMRFit.fwhmL,
+            fwhmG=PrependedDissolvedNMRFit.fwhmG,
+            phase=PrependedDissolvedNMRFit.phase,
+            line_broadening=0,
+            zeropad_size=time.size,
+            method="voigt",
+        )
+
+        # Optional: initial fit (unbounded) like MATLAB
+        AppendedDissolvedNMRFit.fit_time_signal_residual(bounds=(-np.inf, np.inf))
+
+        # Critical: make x0 feasible for bounded refit (SciPy requirement)
+        AppendedDissolvedNMRFit = make_timefit_x0_feasible(AppendedDissolvedNMRFit, lb, ub)
+
+        # Bounded refit (MATLAB "setBounds + refit")
+        AppendedDissolvedNMRFit.fit_time_signal_residual(bounds=(lb, ub))
+
+        # -------------------- 3) MATLAB: dwell_s * fftshift(fft(calcComponentTimeDomainSignal(time),[],1),1) --------------------
+        # Use ONLY calcComponentTimeDomainSignal, then sum components:
+        comp_td = AppendedDissolvedNMRFit.calcComponentTimeDomainSignal(time)  # (Nt, 3)
+        fit_td  = np.sum(comp_td, axis=1)                                     # (Nt,)
+
+        AppendedDissolvedFit = dwell_s * np.fft.fftshift(np.fft.fft(fit_td))
+        phase = AppendedDissolvedNMRFit.phase[2]
+        area  = AppendedDissolvedNMRFit.area[2]
+
+        if plot_fit:
+            f = AppendedDissolvedNMRFit.f
+            spec = AppendedDissolvedNMRFit.spectral_signal  # measured spectrum
+
+            # If AppendedDissolvedFit is component-resolved (Nfreq, 3)
+            fit_components = AppendedDissolvedFit
+            fit_sum = np.sum(fit_components, axis=1)
+
+            # ---- Figure ----
+            plt.figure(figsize=(16, 9), facecolor="white")
+
+            # ---------------- Data ----------------
+            plt.plot(f, np.abs(spec), 'b', label='Spectrum - Magnitude')
+            plt.plot(f, np.real(spec), 'r', label='Spectrum - Real')
+            plt.plot(f, np.imag(spec), color=(0, 0.6, 0.2), label='Spectrum - Imaginary')
+
+            # ---------------- Fits ----------------
+            plt.plot(f, np.abs(fit_sum), color=(0, 0, 1, 0.33), linewidth=3, label='Fit - Magnitude')
+            plt.plot(f, np.real(fit_sum), color=(1, 0, 0, 0.33), linewidth=3, label='Fit - Real')
+            plt.plot(f, np.imag(fit_sum), color=(0, 0.6, 0.2, 0.33), linewidth=3, label='Fit - Imaginary')
+
+            # ---------------- Components (Real only) ----------------
+            plt.fill_between(f, 0, np.real(fit_components[:, 0]),
+                            color='r', alpha=0.33, label='RBC - Real')
+
+            plt.fill_between(f, 0, np.real(fit_components[:, 1]),
+                            color='b', alpha=0.33, label='Barrier - Real')
+
+            plt.fill_between(f, 0, np.real(fit_components[:, 2]),
+                            color=(0, 0.6, 0.2), alpha=0.33, label='Gas - Real')
+
+            # ---------------- Settings ----------------
+            plt.legend(loc='best', ncol=3, frameon=False)
+            plt.xlim([-8000, 2000])
+            plt.gca().invert_xaxis()  # MATLAB 'XDir','reverse'
+            plt.xticks(fontsize=18)
+            plt.yticks(fontsize=18)
+
+            ratio = AppendedDissolvedNMRFit.area[0] / AppendedDissolvedNMRFit.area[1]
+
+            plt.title(f'Dissolved Phase Spectra and Fit: RBC/Barrier = {ratio:.3f}', fontsize=22)
+            plt.xlabel('Frequency (Hz)', fontsize=20)
+            plt.ylabel('NMR Signal (a.u.)', fontsize=20)
 
             plt.tight_layout()
             plt.show()
 
-        gas_idx = 2  # the -7700 Hz component
-        GasArea_DissAcq = float(disfitObj[gas_idx, 0])
-        GasPhase_DissAcq_deg = float(disfitObj[gas_idx, 4])
-        FreqOffset_Hz = float(disfitObj[gas_idx, 1])
+            print('Fitting Spectrum Completed.')
 
-        # c) build gas/diss kspace matrices from imaging acquisitions
-        # after relabeling later: contrast 1 = gas, 2 = dissolved
-        # In Philips MRD: repetition distinguishes gas vs dissolved for Dixon
-        gas_rep  = data_set_config.contrast_order.index(1)   # rep that maps to Xe gas (contrast=1)
-        diss_rep = data_set_config.contrast_order.index(2)   # rep that maps to Xe dissolved (contrast=2)
-
-        gas_acq_idx  = [i for i,a in enumerate(acqs) if i != bonus_idx and a.idx.repetition == gas_rep]
-        diss_acq_idx = [i for i,a in enumerate(acqs) if i != bonus_idx and a.idx.repetition == diss_rep]
-
-        GasKSpace  = np.stack([np.squeeze(acqs[i].data).reshape(-1) for i in gas_acq_idx],  axis=1)   # [RO, Nproj]
-        DissKSpace = np.stack([np.squeeze(acqs[i].data).reshape(-1) for i in diss_acq_idx], axis=1)  # [RO, Nproj]
-
+        freq_jump = 7143
         # d) correct dissolved kspace
         DissKSpace_corr = gas_phase_contamination_removal(
-            DissKSpace=DissKSpace,
-            GasKSpace=GasKSpace,
-            dwell_s=dwell_s,
-            FreqOffset_Hz=FreqOffset_Hz,
-            GasPhase_DissAcq_deg=GasPhase_DissAcq_deg,
-            GasArea_DissAcq=GasArea_DissAcq,
-            GasFA_deg=float(data_set_config.flip_angle_gas),
+            data_dissolved=DissolvedKSpaceInit,
+            data_gas=GasKSpaceInit,
+            sample_time=dwell_s,
+            freq_gas_acq_diss = -freq_jump,
+            phase_gas_acq_diss = phase,
+            area_gas_acq_diss = area,
+            fa_gas=float(data_set_config.flip_angle_gas),
         )
 
         # e) write corrected data back into dissolved acquisitions
@@ -659,8 +960,12 @@ if __name__ == "__main__":
                 raw_file=args.raw_file, traj_file=args.traj_file)
 '''
     
-    
-data_file = r"D:\OneDrive - cchmc\Lab\Random Subject analysis\Philips2MRD_data\UF_3D_radial_Dixon\6)Gas_Exchange\raw_409.data"
-raw_file = r"D:\OneDrive - cchmc\Lab\Random Subject analysis\Philips2MRD_data\UF_3D_radial_Dixon\6)Gas_Exchange\20251124_162012_Xenon_3D_Radial_Dixon.raw"
-traj_file = None 
+
+data_file = r"D:\OneDrive - cchmc\Lab\Xe_App\testtingData\Test_Data_forXIPline\Gasexchange\20210924 IRC186H-1033_CPIR\gasdata\raw_405.data"
+raw_file = r"D:\OneDrive - cchmc\Lab\Xe_App\testtingData\Test_Data_forXIPline\Gasexchange\20210924 IRC186H-1033_CPIR\gasdata\20240125_114920_CPIR_Gas_Exchange.raw"
+#traj_file = r"D:\OneDrive - cchmc\Lab\Xe_App\testtingData\Test_Data_forXIPline\Gasexchange\20210924 IRC186H-1033_CPIR\gasdata\20240125_114920_CPIR_Gas_Exchange.sin" 
+traj_file = r"D:\OneDrive - cchmc\Lab\Xe_App\testtingData\Test_Data_forXIPline\Gasexchange\20210924 IRC186H-1033_CPIR\gasdata\20200210_133229_Dissolved_Xe_20191008 - 3T-T1.sin"
+
 Gx2XeCTCMRD(data_file, raw_file, traj_file)
+
+
