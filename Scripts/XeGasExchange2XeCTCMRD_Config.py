@@ -22,11 +22,14 @@ class Config():
         self.multi_echo = False
         self.ext_traj = True
 
+        self.plotting = False
+        
         self.data_type = DataType.CALIBRATION
         self.contrast_order = [1, 2]  # gas/diss
-        self.bonus_spec = True
-        self.gas_contam_removal = True 
-        self.exclude_bonus_spec = False 
+        self.bonus_spec = False
+        self.gas_contam_removal = False 
+        self.gas_contam_method = 'bonus_spec'
+        self.exclude_bonus_spec = True 
         if self.gas_contam_removal:
             self.exclude_bonus_spec = False
         self.prep_pulses = False
