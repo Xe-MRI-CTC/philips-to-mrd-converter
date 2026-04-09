@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from scipy.optimize import least_squares
 
 from nmr_mix import NMR_Mix
- 
+  
 
 class NMR_TimeFit(NMR_Mix):
     """Class to fit time domain FIDs to a series of exponentially decaying components.

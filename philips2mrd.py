@@ -4,23 +4,10 @@ import os
 import datetime
 import math
 import numpy as np
-import importlib
+#import importlib
 import ismrmrd as mrd
 from xsdata.models.datatype import XmlDate, XmlTime
- 
-# Import read philips
-if sys.version_info.major != 3:
-    raise RuntimeError('Requires python 3')
-
-major_version = sys.version_info.major
-minor_version = sys.version_info.minor
-rp_name = f"rp.rp{major_version}{minor_version}"
-try:
-    rp = importlib.import_module(rp_name)
-except ModuleNotFoundError:
-    raise RuntimeError(
-        f'ReadPhilips not compiled for Python {sys.version_info.major}.{sys.version_info.minor}')
-
+import readphilips.ReadPhilips as rp
 
 class Ph2Mrd():
     def __init__(self, dlName=None, rlsName=None):
