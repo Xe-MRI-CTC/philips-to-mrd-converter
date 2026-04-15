@@ -270,77 +270,79 @@ def processRadialParams(header, trajtype, delay):
                     phi = phi_a1[:,sort_index]
                     
                 elif trajtype == 2: # Custom Haltoned Spiral, single interleave
-                    print("Inside getRadialParams: trajtype=Haltoned Spiral, single interleave")
-                    phPI = 3.14159265358979323846
-                    arch_z = np.zeros(nprof)
-                    arch_azi = np.zeros(nprof)
-                    PrevAngle = 0
-                    for proj in range(nprof):
-                        currZ = -1.0 + 2.0 * proj/nprof
-                        arch_z[proj] = currZ
-                        if proj == 0:
-                            arch_azi[proj] = 0
-                        else:
-                            arch_azi[proj] = math.fmod(PrevAngle + 3.6/(np.sqrt(nprof*(1-currZ*currZ))), 2.0*phPI)
-                        PrevAngle = arch_azi[proj]
-                    
-                    #calc halton order
-                    p1 = 2
-                    #p2 = 3;
-                    halt_polar = np.zeros(nprof)
-                    for proj in range(nprof):
-                        z = halton_number(proj+1,p1) * 2 - 1
-                        #phi = 2 * M_PI * haltonnumber(proj+1,p2)
-                        halt_polar[proj] = math.acos(z)
-                        #halt_azi(proj+1) = phi; #not used here
+                    if interleaves == 1:
+                        print("Inside getRadialParams: trajtype=Haltoned Spiral, single interleave")
+                        phPI = 3.14159265358979323846
+                        arch_z = np.zeros(nprof)
+                        arch_azi = np.zeros(nprof)
+                        PrevAngle = 0
+                        for proj in range(nprof):
+                            currZ = -1.0 + 2.0 * proj/nprof
+                            arch_z[proj] = currZ
+                            if proj == 0:
+                                arch_azi[proj] = 0
+                            else:
+                                arch_azi[proj] = math.fmod(PrevAngle + 3.6/(np.sqrt(nprof*(1-currZ*currZ))), 2.0*phPI)
+                            PrevAngle = arch_azi[proj]
+                        
+                        #calc halton order
+                        p1 = 2
+                        #p2 = 3;
+                        halt_polar = np.zeros(nprof)
+                        for proj in range(nprof):
+                            z = halton_number(proj+1,p1) * 2 - 1
+                            #phi = 2 * M_PI * haltonnumber(proj+1,p2)
+                            halt_polar[proj] = math.acos(z)
+                            #halt_azi(proj+1) = phi; #not used here
 
-                    #sort spiral via halton
-                    sort_index = np.argsort(halt_polar)
-                    z = arch_z[sort_index]
-                    phi = arch_azi[sort_index]
-                elif trajtype == 3: # Haltoned Spiral, multiple interleaves
-                    # assumes halton_number(index, base) already exists
-                    M_PI = math.pi
-                    totproj = nprof * interleaves
+                        #sort spiral via halton
+                        sort_index = np.argsort(halt_polar)
+                        z = arch_z[sort_index]
+                        phi = arch_azi[sort_index]
+                        
+                    else: # Haltoned Spiral, multiple interleaves
+                        print("Inside getRadialParams: trajtype=Haltoned Spiral, multiple interleaves")
 
-                    arch_z = np.zeros(totproj, dtype=float)
-                    arch_azi = np.zeros(totproj, dtype=float)
-                    halt_polar = np.zeros(totproj, dtype=float)
+                        M_PI = math.pi
+                        totproj = nprof * interleaves
 
-                    # global spiral list
-                    PrevAngle = 0.0
-                    for proj in range(totproj):
-                        currZ = -1.0 + 2.0 * proj / totproj
-                        arch_z[proj] = currZ
+                        arch_z = np.zeros(totproj, dtype=float)
+                        arch_azi = np.zeros(totproj, dtype=float)
+                        halt_polar = np.zeros(totproj, dtype=float)
 
-                        if proj == 0:
-                            arch_azi[proj] = 0.0
-                        else:
-                            arch_azi[proj] = (PrevAngle + 3.6 / math.sqrt(totproj * (1.0 - currZ**2))) % (2.0 * M_PI)
+                        PrevAngle = 0.0
+                        for proj in range(totproj):
+                            currZ = -1.0 + 2.0 * proj / totproj
+                            arch_z[proj] = currZ
 
-                        PrevAngle = arch_azi[proj]
+                            if proj == 0:
+                                arch_azi[proj] = 0.0
+                            else:
+                                denom = max(1e-12, 1.0 - currZ**2)
+                                arch_azi[proj] = (
+                                    PrevAngle + 3.6 / math.sqrt(totproj * denom)
+                                ) % (2.0 * M_PI)
+                            PrevAngle = arch_azi[proj]
 
-                    # halton polar
-                    p1 = 2
-                    for proj in range(totproj):
-                        z_h = 2.0 * halton_number(proj + 1, p1) - 1.0
-                        z_h = max(-1.0, min(1.0, z_h))
-                        halt_polar[proj] = math.acos(z_h)
+                        p1 = 2
+                        for proj in range(totproj):
+                            z_h = 2.0 * halton_number(proj + 1, p1) - 1.0
+                            z_h = max(-1.0, min(1.0, z_h))
+                            halt_polar[proj] = math.acos(z_h)
 
-                    # sort spiral by halton polar
-                    sort_index = np.argsort(halt_polar)
-                    arch_z = arch_z[sort_index]
-                    arch_azi = arch_azi[sort_index]
+                        sort_index = np.argsort(halt_polar)
+                        arch_z = arch_z[sort_index]
+                        arch_azi = arch_azi[sort_index]
 
-                    # reshape back to [interleaves x nprof]
-                    z = np.zeros((interleaves, nprof), dtype=float)
-                    phi = np.zeros((interleaves, nprof), dtype=float)
+                        # acquisition-order layout: idx = j*interleaves + i
+                        z = np.zeros((interleaves, nprof), dtype=float)
+                        phi = np.zeros((interleaves, nprof), dtype=float)
 
-                    for j in range(nprof):
-                        for i in range(interleaves):
-                            idx = j * interleaves + i
-                            z[i, j] = arch_z[idx]
-                            phi[i, j] = arch_azi[idx]       
+                        for j in range(nprof):
+                            for i in range(interleaves):
+                                idx = j * interleaves + i
+                                z[i, j] = arch_z[idx]
+                                phi[i, j] = arch_azi[idx]
                 else:
                     print("Trajectory type not found.")
                     return                                                                        
@@ -353,17 +355,20 @@ def processRadialParams(header, trajtype, delay):
                 phi = (phi + np.sqrt(2.0 * nprof * np.pi / interleaves) *
                        np.arcsin(z))
                 print("Standard Philips Radial Coordinates Assumed.")
+                
+  
             radparams['Z'] = z
             radparams['PHI'] = phi
             cp = np.cos(phi)
             sp = np.sin(phi)
-            st = np.sqrt(1.0 - z * z)
+            st = np.sqrt(1.0 - z * z)  
             coords = np.zeros([interleaves, nprof, nsamp, 3])
             outdims = [interleaves, nprof, nsamp]
             coords[:,:,:,0] = np.reshape(np.outer(cp * st, kr), outdims)
             coords[:,:,:,1] = np.reshape(np.outer(sp * st, kr), outdims)
             coords[:,:,:,2] = np.reshape(np.outer(z, kr), outdims)
             radparams['COORDS'] = coords
+
             if fid_samp and flyback:
                 coords2 = np.zeros([interleaves, nprof, nsamp2, 3])
                 outdims2 = [interleaves, nprof, nsamp2]
@@ -371,6 +376,24 @@ def processRadialParams(header, trajtype, delay):
                 coords2[:,:,:,1] = np.reshape(np.outer(sp * st, kr2), outdims2)
                 coords2[:,:,:,2] = np.reshape(np.outer(z, kr2), outdims2)
                 radparams['COORDS_FLYBACK'] = coords2
-                   
+                
+            '''                   
+            radparams['Z'] = z
+            radparams['PHI'] = phi
+            cp = np.cos(phi)
+            sp = np.sin(phi)
+            st = np.sqrt(1.0 - z * z)
+            coords = np.zeros((interleaves, nprof, nsamp, 3), dtype=float)
+            coords[:, :, :, 0] = (cp * st)[:, :, None] * kr[None, None, :]
+            coords[:, :, :, 1] = (sp * st)[:, :, None] * kr[None, None, :]
+            coords[:, :, :, 2] = z[:, :, None] * kr[None, None, :]
+            radparams['COORDS'] = coords                   
+            if fid_samp and flyback:
+                coords2 = np.zeros((interleaves, nprof, nsamp2, 3), dtype=float)
+                coords2[:, :, :, 0] = (cp * st)[:, :, None] * kr2[None, None, :]
+                coords2[:, :, :, 1] = (sp * st)[:, :, None] * kr2[None, None, :]
+                coords2[:, :, :, 2] = z[:, :, None] * kr2[None, None, :]
+                radparams['COORDS_FLYBACK'] = coords2                   
+            '''       
 
     return(radparams)
