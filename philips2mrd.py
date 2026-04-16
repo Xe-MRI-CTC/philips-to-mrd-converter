@@ -165,12 +165,20 @@ class Ph2Mrd():
             acq.data[:] = dat[:, :nKx]
             try:
                 if acq.idx.contrast == 0:
-                    traj = crds[acq.idx.kspace_encode_step_2,
-                                acq.idx.kspace_encode_step_1, :, :]
+                    if data_size.numKz > 1:
+                        traj = crds[acq.idx.kspace_encode_step_2,
+                                    acq.idx.kspace_encode_step_1, :, :]
+                    else:
+                        traj = crds[acq.idx.kspace_encode_step_1, :, :]
+
                 else:
-                    traj = crds_flyback[acq.idx.kspace_encode_step_2,
-                                        acq.idx.kspace_encode_step_1, :, :]
-                acq.traj[:] = traj
+                    if data_size.numKz > 1:
+                        traj = crds_flyback[acq.idx.kspace_encode_step_2,
+                                            acq.idx.kspace_encode_step_1, :, :]
+                    else:
+                        traj = crds_flyback[acq.idx.kspace_encode_step_1, :, :]
+
+                acq.traj[:] = traj[:,0:acq.traj.shape[1]]
             except:
                 pass
 
