@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 import os
-import datetime
+from datetime import datetime
 import math
 import numpy as np
 #import importlib
@@ -334,19 +334,23 @@ class Ph2Mrd():
 
     def setMeasurementInfo(self, mrdName, rlsPhData, header):
         meas_info = mrd.xsd.measurementInformationType()
-        scan_date = mrdName[:8]
-        scan_time = mrdName[9:15]
-        meas_info.frameOfReferenceUID = scan_date
+        studyInfo = mrd.xsd.studyInformationType()
+
+        scan_date = rlsPhData.header['sin']['start_scan_date_time'][0][0]
+        scan_date = scan_date.split("-")
+        scan_month = datetime.strptime(scan_date[1], "%b").month
+        scan_time = rlsPhData.header['sin']['start_scan_date_time'][0][1] #current read philips code only reads hour
+        
         meas_info.protocolName = rlsPhData.header['sin']['scan_name'][0][0]
         meas_info.seriesDate = XmlDate(
-            int(scan_date[:4]), int(scan_date[4:6]), int(scan_date[6:]))
+            int(scan_date[2]), scan_month, int(scan_date[0]))
         meas_info.seriesTime = XmlTime(
-            int(scan_time[:2]), int(scan_time[2:4]), int(scan_time[4:6]))
+            int(scan_time), 0, 0) #set minute and sec to 0 since only get hour currently
+        
+        studyInfo.studyDate =  meas_info.seriesDate
+        studyInfo.studyTime = meas_info.seriesTime
+        
         header.measurementInformation = meas_info
-        studyInfo = mrd.xsd.studyInformationType()
-        sd = rlsPhData.header['sin']['start_scan_date_time'][0][0]
-        studyInfo.studyDate = datetime.datetime.strptime(
-            sd, '%d-%b-%Y').strftime('%Y-%m-%d')
         header.studyInformation = studyInfo
 
     def setSystem(self, rlsPhData, data_size, header):
