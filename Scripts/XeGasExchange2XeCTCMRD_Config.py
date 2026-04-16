@@ -28,8 +28,8 @@ class Config():
         self.contrast_order = [2, 1]  # gas/diss [1, 2] 
         self.prep_pulses = False
 
-        self.bonus_spec = True
-        self.gas_contam_removal = True  
+        self.bonus_spec = False
+        self.gas_contam_removal = False  
         self.gas_contam_method = 'bonus_spec'
         self.exclude_bonus_spec = True  
 

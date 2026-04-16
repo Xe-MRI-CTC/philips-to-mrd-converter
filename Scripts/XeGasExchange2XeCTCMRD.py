@@ -3,6 +3,8 @@
 import sys
 import os
 from pathlib import Path
+repo_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(repo_root))
 import philips2mrd as p2m
 import readphilips.ReadPhilips as rp
 import ismrmrd as mrd
@@ -628,20 +630,21 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             crds = inputDataTraj.spparams['COORDS_EXPANDED']
             
         # Haltoned Spiral, multiple interleaves: remap columns from acquisition order -> scanner ky labels
-        n_interleaves = crds.shape[0]
-        if data_set_config.data_type == DataType.DIXON and data_set_config.trajorder == 2 and n_interleaves > 1:
-            acqs_for_perm = [dset.read_acquisition(i) for i in range(dset.number_of_acquisitions())]
+        if data_set_config.data_type == DataType.DIXON: 
+            n_interleaves = crds.shape[0]
+            if data_set_config.trajorder == 2 and n_interleaves > 1:
+                acqs_for_perm = [dset.read_acquisition(i) for i in range(dset.number_of_acquisitions())]
 
-            # use first repetition only to avoid duplicate gas/diss blocks
-            rep0 = min(int(a.idx.repetition) for a in acqs_for_perm if a is not None)
-            crds, ky_order = reorder_crds_to_scanner_labels(acqs_for_perm, crds, rep_to_use=rep0)
-            if debug_mode:
-                print("ky acquisition order -> ky label:")
-                print(ky_order[:50])
+                # use first repetition only to avoid duplicate gas/diss blocks
+                rep0 = min(int(a.idx.repetition) for a in acqs_for_perm if a is not None)
+                crds, ky_order = reorder_crds_to_scanner_labels(acqs_for_perm, crds, rep_to_use=rep0)
+                if debug_mode:
+                    print("ky acquisition order -> ky label:")
+                    print(ky_order[:50])
 
-            if 'crds_flyback' in locals():
-                crds_flyback, _ = reorder_crds_to_scanner_labels(acqs_for_perm, crds_flyback, rep_to_use=rep0)            
-        
+                if 'crds_flyback' in locals():
+                    crds_flyback, _ = reorder_crds_to_scanner_labels(acqs_for_perm, crds_flyback, rep_to_use=rep0)            
+            
     if debug_mode:      
         # save coords as .mat file
         save_dir = os.path.dirname(data_file)
@@ -1457,7 +1460,5 @@ if __name__ == "__main__":
     Gx2XeCTCMRD(data_file=args.data_file,
                 raw_file=args.raw_file, 
                 traj_file=args.traj_file)
-
-    
 
 
