@@ -11,28 +11,27 @@ class Config():
     '''Configuration class to correctly modify standard MRD conversion to XeCTC GasEx MRD'''
 
     def __init__(self):  # default values hard coded for XeCTC acquisition at CCHMC
-        self.institution = 'CCHMC' # 'CCHMC' | 'Polarean'
+        self.institution = 'Polarean' # 'CCHMC' | 'Polarean'
         self.field_strength = 3.0
         self.H1resonanceFrequency_Hz = 127753955 
         self.orientation = 'Coronal'
 
         self.gr_delay = 1.25  # gradient delay used in calculating trajectories
-        self.trajorder = 1  # trajectory ordering for radial acqusitions, 2 is halton randomized spiral, 1 is 2D golden means, 0 is stock Philips
+        self.trajorder = 2  # trajectory ordering for radial acqusitions,3 is Haltoned Spiral with multiple interleaves, 2 is halton randomized spiral 1 interleaves, 1 is 2D golden means, 0 is stock Philips
 
         self.multi_echo = False
         self.ext_traj = True
 
-        self.plotting = True
+        self.debug_mode = False
         
         self.data_type = DataType.CALIBRATION
-        self.contrast_order = [1, 2]  # gas/diss
+        self.contrast_order = [2, 1]  # gas/diss [1, 2] 
         self.prep_pulses = False
 
         self.bonus_spec = True
-        self.gas_contam_removal = True 
-        self.keep_bonus_spec = True 
-        self.gas_contam_method = 'none'
-        self.exclude_bonus_spec = False  
+        self.gas_contam_removal = True  
+        self.gas_contam_method = 'bonus_spec'
+        self.exclude_bonus_spec = True  
 
         self.flip_angle_gas = 0.5
         self.flip_angle_dis = 20.0
@@ -48,17 +47,8 @@ class Config():
 
         # if multiple frequencies (stored as dynamics/repitition)
         if mrdHeader.encoding[0].encodingLimits.repetition.maximum > 0:
-            self.data_type = DataType.DIXON           
-            if self.bonus_spec:
-                self.gas_contam_removal = True 
-                self.keep_bonus_spec = True 
-                self.gas_contam_method = 'bonus_spec'
-            else:
-                self.gas_contam_removal = False 
-                self.keep_bonus_spec = False 
-                self.gas_contam_method = 'none'                 
-            if self.gas_contam_removal:
-                self.exclude_bonus_spec = False            
+            self.data_type = DataType.DIXON                        
+          
         if float(rls.header['sin']['acq_gamma'][0][0]) > 42000.0:  # Proton
             self.data_type = DataType.UTE
 
@@ -84,14 +74,15 @@ class Config():
         if 'FLORET'.lower() in rls.header['sin']['scan_name'][0][0].lower():
             self.contrast_order = [2, 1]
 
+        '''  
         # Mixes used to store bonus spec
         if int(rls.header['sin']['nr_mixes'][0][0]) > 1:
-            self.bonus_spec = True
+            self.bonus_spec = False
             if self.exclude_bonus_spec:
                 self.gas_contam_removal = False 
             else:
-                self.gas_contam_removal = True #True  # default to true if bonus spec present
-
+                self.gas_contam_removal = False #True  # default to true if bonus spec present
+        '''
         # assume all trs the same and different frequencies are collected as different dynamics
         self.tr_factor = mrdHeader.encoding[0].encodingLimits.repetition.maximum + 1
 
