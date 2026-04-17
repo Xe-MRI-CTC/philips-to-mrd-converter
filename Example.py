@@ -7,8 +7,10 @@ import matplotlib.pyplot as plt
 
 # Set paths
 loc = Path(__file__).parent.absolute()
-dlName = loc / "testdata" / "2DSpiral" / "2DSpiral.data"
-rlsName = loc / "testdata" / "2DSpiral" / "2DSpiral.sin"
+#dlName = loc / "testdata" / "2DSpiral" / "2DSpiral.data"
+#rlsName = loc / "testdata" / "2DSpiral" / "2DSpiral.sin"
+dlName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.data"
+rlsName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.sin"
 outDir = loc
 
 # Run converter
@@ -16,6 +18,7 @@ inputData = p2m.Ph2Mrd(dlName, rlsName)
 inputData.trajorder = 2
 inputData.delay = -1.25
 mrdName, rls, dl = inputData.convert(outDir)
+print("Data converted to mrd format: ", mrdName)
 
 # Load
 dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
@@ -45,7 +48,7 @@ if enc.encodingLimits.contrast != None:
 else:
     ncontrasts = 1
 
-if enc.encodingLimits.kspace_encoding_step_2.maximum == 0:
+if enc.reconSpace.matrixSize.z == 1:
     ndim = 2
 else:
     ndim = 3
@@ -83,6 +86,8 @@ for acqnum in range(firstacq, dset.number_of_acquisitions()):
     all_data[rep, contrast, slice, :, z, y, :] = acq.data
     all_traj[rep, contrast, slice, z, y, :, :] = acq.traj
 
+print("Data read in from ", mrdName)
+
 print(dset.read_xml_header().decode('utf-8'))
 
 dset.close()
@@ -114,4 +119,3 @@ for i in range(n_data):
 ax.set_title('Data')
 plt.show()
 
-print("Data converted to mrd format: ", mrdName)
