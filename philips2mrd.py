@@ -48,7 +48,7 @@ class Ph2Mrd():
             dlPresent, rlsPresent, dlFileName, rlsFileName)
 
         # Extract from philips data size
-        data_size, traj_type = self.get_data_sizes(rlsPresent, rlsPhData)
+        data_size, traj_type = self.get_data_sizes(rlsPhData, dlPhData)
 
         # Extract Non cartesian sizes/trajectory
         crds, crds_flyback = self.get_non_cart_coords(
@@ -378,83 +378,152 @@ class Ph2Mrd():
             crds = rlsPhData.spparams['COORDS_EXPANDED']
         return crds, crds_flyback
 
-    def get_data_sizes(self, rlsPresent, rlsPhData):
+    def get_data_sizes(self, rlsPhData, dlPhData):
         # Determine if Cart or non-Cart
-        try:
-            traj_type = int(rlsPhData.header['sin']['k_space_traj_type'][0][0])
-        except:
-            traj_type = 0
+        if rlsPhData != None:
+            try:
+                traj_type = int(rlsPhData.header['sin']['k_space_traj_type'][0][0])
+            except:
+                traj_type = 0
+        else:
+            traj_type = None
 
-        # Determine what encoding numbers to use
-        enc_nr_name_min = 'min_encoding_numbers'
-        enc_nr_name_max = 'max_encoding_numbers'
-        if traj_type > 0:
-            enc_nr_name_min = 'non_cart_min_encoding_nrs'
-            enc_nr_name_max = 'non_cart_max_encoding_nrs'
-
-        # Create data size instance and update
-        data_size = PhDataSize()
-        data_size.dims = int(
-            rlsPhData.header['sin']['encoding_dimensions'][0][0])
-        data_size.numChan = int(
-            rlsPhData.header['sin']['nr_measured_channels'][0][0])
-        data_size.numMix = int(rlsPhData.header['sin']['nr_mixes'][0][0])
-        data_size.numDyn = int(
-            rlsPhData.header['sin']['nr_dynamic_scans'][0][0])
-        data_size.numCard = int(
-            rlsPhData.header['sin']['nr_cardiac_phases'][0][0])
-        data_size.numRows = int(
-            rlsPhData.header['sin']['nr_rows'][0][0])  # Need to confirm
-        data_size.numExtr2 = int(
-            # Need to confirm
-            rlsPhData.header['sin']['nr_extra_attr_values'][0][0])
-        data_size.numEcho = int(rlsPhData.header['sin']['nr_echoes'][0][0])
-        data_size.numAver = int(
-            rlsPhData.header['sin']['nr_measurements'][0][0])
-        data_size.numLoca = int(rlsPhData.header['sin']['nr_locations'][0][0])
-
-        data_size.kzMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][2])
-        data_size.kzMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][2])
-        data_size.kzCent = 0
-        data_size.numKz = data_size.kzMax - data_size.kzMin + 1
-
-        data_size.kyMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][1])
-        data_size.kyMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][1])
-        data_size.kyCent = 0
-        data_size.numKy = data_size.kyMax - data_size.kyMin + 1
-
-        data_size.kxMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][0])
-        data_size.kxMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][0])
-        data_size.kxCent = 0
-        data_size.numKx[0] = data_size.kxMax - data_size.kxMin + 1
-
-        # For mEcho with flyback
-        if data_size.numEcho > 1:
-            data_size.kxMin = int(
-                rlsPhData.header['sin'][enc_nr_name_min][0][4])
-            data_size.kxMax = int(
-                rlsPhData.header['sin'][enc_nr_name_max][0][4])
-            data_size.numKx[1] = data_size.kxMax - data_size.kxMin + 1
-        # For mixes
-        if data_size.numMix > 1:
-            data_size.kxMin = int(
-                rlsPhData.header['sin'][enc_nr_name_min][0][4])
-            data_size.kxMax = int(
-                rlsPhData.header['sin'][enc_nr_name_max][0][4])
-            data_size.numKx[2] = data_size.kxMax - data_size.kxMin + 1
-        # For flyback and mix
-        if data_size.numEcho > 1 and data_size.numMix > 1:
-            data_size.kxMin = int(
+        # Use DL data for data size if present
+        if dlPhData != None:
+            # Create data size instance and update
+            data_size = PhDataSize()
+            data_size.dims = int(
+                rlsPhData.header['sin']['encoding_dimensions'][0][0])
+            data_size.numChan = int(
+                rlsPhData.header['sin']['nr_measured_channels'][0][0])
+            data_size.numMix = int(rlsPhData.header['sin']['nr_mixes'][0][0])
+            data_size.numDyn = int(
+                rlsPhData.header['sin']['nr_dynamic_scans'][0][0])
+            data_size.numCard = int(
+                rlsPhData.header['sin']['nr_cardiac_phases'][0][0])
+            data_size.numRows = int(
+                rlsPhData.header['sin']['nr_rows'][0][0])  # Need to confirm
+            data_size.numExtr2 = int(
                 # Need to confirm
-                rlsPhData.header['sin'][enc_nr_name_min][0][8])
-            data_size.kxMax = int(
-                rlsPhData.header['sin'][enc_nr_name_max][0][8])
-            data_size.numKx[2] = data_size.kxMax - data_size.kxMin + 1
-            data_size.kxMin = int(
-                rlsPhData.header['sin'][enc_nr_name_min][0][12])
-            data_size.kxMax = int(
-                rlsPhData.header['sin'][enc_nr_name_max][0][12])
-            data_size.numKx[3] = data_size.kxMax - data_size.kxMin + 1
+                rlsPhData.header['sin']['nr_extra_attr_values'][0][0])
+            data_size.numEcho = int(rlsPhData.header['sin']['nr_echoes'][0][0])
+            data_size.numAver = int(
+                rlsPhData.header['sin']['nr_measurements'][0][0])
+            data_size.numLoca = int(rlsPhData.header['sin']['nr_locations'][0][0])
+
+            data_size.kzMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][2])
+            data_size.kzMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][2])
+            data_size.kzCent = 0
+            data_size.numKz = data_size.kzMax - data_size.kzMin + 1
+
+            data_size.kyMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][1])
+            data_size.kyMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][1])
+            data_size.kyCent = 0
+            data_size.numKy = data_size.kyMax - data_size.kyMin + 1
+
+            data_size.kxMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][0])
+            data_size.kxMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][0])
+            data_size.kxCent = 0
+            data_size.numKx[0] = data_size.kxMax - data_size.kxMin + 1
+
+            # For mEcho with flyback
+            if data_size.numEcho > 1:
+                data_size.kxMin = int(
+                    rlsPhData.header['sin'][enc_nr_name_min][0][4])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][4])
+                data_size.numKx[1] = data_size.kxMax - data_size.kxMin + 1
+            # For mixes
+            if data_size.numMix > 1:
+                data_size.kxMin = int(
+                    rlsPhData.header['sin'][enc_nr_name_min][0][4])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][4])
+                data_size.numKx[2] = data_size.kxMax - data_size.kxMin + 1
+            # For flyback and mix
+            if data_size.numEcho > 1 and data_size.numMix > 1:
+                data_size.kxMin = int(
+                    # Need to confirm
+                    rlsPhData.header['sin'][enc_nr_name_min][0][8])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][8])
+                data_size.numKx[2] = data_size.kxMax - data_size.kxMin + 1
+                data_size.kxMin = int(
+                    rlsPhData.header['sin'][enc_nr_name_min][0][12])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][12])
+                data_size.numKx[3] = data_size.kxMax - data_size.kxMin + 1
+        else: # Use RLS for data size
+            # Determine what encoding numbers to use
+            enc_nr_name_min = 'min_encoding_numbers'
+            enc_nr_name_max = 'max_encoding_numbers'
+            if traj_type > 0:
+                enc_nr_name_min = 'non_cart_min_encoding_nrs'
+                enc_nr_name_max = 'non_cart_max_encoding_nrs'
+
+            # Create data size instance and update
+            data_size = PhDataSize()
+            data_size.dims = int(
+                rlsPhData.header['sin']['encoding_dimensions'][0][0])
+            data_size.numChan = int(
+                rlsPhData.header['sin']['nr_measured_channels'][0][0])
+            data_size.numMix = int(rlsPhData.header['sin']['nr_mixes'][0][0])
+            data_size.numDyn = int(
+                rlsPhData.header['sin']['nr_dynamic_scans'][0][0])
+            data_size.numCard = int(
+                rlsPhData.header['sin']['nr_cardiac_phases'][0][0])
+            data_size.numRows = int(
+                rlsPhData.header['sin']['nr_rows'][0][0])  # Need to confirm
+            data_size.numExtr2 = int(
+                # Need to confirm
+                rlsPhData.header['sin']['nr_extra_attr_values'][0][0])
+            data_size.numEcho = int(rlsPhData.header['sin']['nr_echoes'][0][0])
+            data_size.numAver = int(
+                rlsPhData.header['sin']['nr_measurements'][0][0])
+            data_size.numLoca = int(rlsPhData.header['sin']['nr_locations'][0][0])
+
+            data_size.kzMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][2])
+            data_size.kzMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][2])
+            data_size.kzCent = 0
+            data_size.numKz = data_size.kzMax - data_size.kzMin + 1
+
+            data_size.kyMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][1])
+            data_size.kyMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][1])
+            data_size.kyCent = 0
+            data_size.numKy = data_size.kyMax - data_size.kyMin + 1
+
+            data_size.kxMin = int(rlsPhData.header['sin'][enc_nr_name_min][0][0])
+            data_size.kxMax = int(rlsPhData.header['sin'][enc_nr_name_max][0][0])
+            data_size.kxCent = 0
+            data_size.numKx[0] = data_size.kxMax - data_size.kxMin + 1
+
+            # For mEcho with flyback
+            if data_size.numEcho > 1:
+                data_size.kxMin = int(
+                    rlsPhData.header['sin'][enc_nr_name_min][0][4])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][4])
+                data_size.numKx[1] = data_size.kxMax - data_size.kxMin + 1
+            # For mixes
+            if data_size.numMix > 1:
+                data_size.kxMin = int(
+                    rlsPhData.header['sin'][enc_nr_name_min][0][4])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][4])
+                data_size.numKx[2] = data_size.kxMax - data_size.kxMin + 1
+            # For flyback and mix
+            if data_size.numEcho > 1 and data_size.numMix > 1:
+                data_size.kxMin = int(
+                    # Need to confirm
+                    rlsPhData.header['sin'][enc_nr_name_min][0][8])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][8])
+                data_size.numKx[2] = data_size.kxMax - data_size.kxMin + 1
+                data_size.kxMin = int(
+                    rlsPhData.header['sin'][enc_nr_name_min][0][12])
+                data_size.kxMax = int(
+                    rlsPhData.header['sin'][enc_nr_name_max][0][12])
+                data_size.numKx[3] = data_size.kxMax - data_size.kxMin + 1
 
         return data_size, traj_type
 

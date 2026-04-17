@@ -506,7 +506,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     if data_file == None:
         dlName = filedialog.askopenfilename(title='Select .data file', filetypes=[
             ("Philips .data file", "*.data")])
-    elif data_file == None:
+    elif data_file == '':
         dlName = None
     else:
         dlName = data_file
@@ -515,7 +515,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     if raw_file == None:
         rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
             ("Philips .raw file", "*.raw")], initialdir=outDir)
-    elif raw_file == None:
+    elif raw_file == '':
         raw_file = None
     else:
         rlsName = raw_file
