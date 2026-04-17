@@ -1,6 +1,8 @@
 
 # main script
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import os
 from pathlib import Path
 import philips2mrd as p2m
@@ -8,7 +10,7 @@ import readphilips.ReadPhilips as rp
 import ismrmrd as mrd
 from Scripts.XeGasExchange2XeCTCMRD_Config import Config, DataType
 import argparse
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import tkinter as tk
 import numpy as np
 import copy
@@ -508,8 +510,9 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         dlName = None
     else:
         dlName = data_file
-        
+
     outDir = Path(dlName).parent.absolute()
+
     if raw_file == None:
         rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
             ("Philips .raw file", "*.raw")], initialdir=outDir)
@@ -517,6 +520,19 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         raw_file = None
     else:
         rlsName = raw_file
+
+
+    if traj_file is None:
+        traj_present = messagebox.askyesno(
+            title=".sin file present?",
+            message="Is a .sin file available (select 'No' for default T1 .sin file)?"
+        )
+        if traj_present:
+            traj_file = filedialog.askopenfilename(
+                title='Select trajectory file', filetypes=[("Trajectory files","*.sin")],
+                initialdir=outDir)
+        else:
+            traj_file = None
 
     path = os.path.normpath(rlsName)
     fname = path.split(os.sep)
@@ -581,7 +597,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     debug_mode = data_set_config.debug_mode 
     
     # Get path to sin file trajectories if necessary
-    if data_set_config.data_type == DataType.CALIBRATION: 
+    if data_set_config.data_type == DataType.CALIBRATION:
         data_set_config.ext_traj == False
     if data_set_config.ext_traj == True:
         if traj_file == None:
@@ -1455,9 +1471,8 @@ if __name__ == "__main__":
 
     # Call the main function with parsed arguments
     Gx2XeCTCMRD(data_file=args.data_file,
-                raw_file=args.raw_file, 
+                raw_file=args.raw_file,
                 traj_file=args.traj_file)
 
-    
 
 

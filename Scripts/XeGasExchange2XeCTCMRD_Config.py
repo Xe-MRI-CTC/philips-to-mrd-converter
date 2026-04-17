@@ -11,9 +11,9 @@ class Config():
     '''Configuration class to correctly modify standard MRD conversion to XeCTC GasEx MRD'''
 
     def __init__(self):  # default values hard coded for XeCTC acquisition at CCHMC
-        self.institution = 'Polarean' # 'CCHMC' | 'Polarean'
+        self.institution = 'CCHMC' # 'CCHMC' | 'Polarean'
         self.field_strength = 3.0
-        self.H1resonanceFrequency_Hz = 127753955 
+        self.H1resonanceFrequency_Hz = 127753955
         self.orientation = 'Coronal'
 
         self.gr_delay = 1.25  # gradient delay used in calculating trajectories
@@ -23,15 +23,15 @@ class Config():
         self.ext_traj = True
 
         self.debug_mode = False
-        
+
         self.data_type = DataType.CALIBRATION
-        self.contrast_order = [2, 1]  # gas/diss [1, 2] 
+        self.contrast_order = [2, 1]  # gas/diss [1, 2]
         self.prep_pulses = False
 
-        self.bonus_spec = True
-        self.gas_contam_removal = True  
+        self.bonus_spec = False
+        self.gas_contam_removal = False
         self.gas_contam_method = 'bonus_spec'
-        self.exclude_bonus_spec = True  
+        self.exclude_bonus_spec = True
 
         self.flip_angle_gas = 0.5
         self.flip_angle_dis = 20.0
