@@ -8,44 +8,44 @@ class TestPhilips2MRD(unittest.TestCase):
     def setUp(self):
         # Set paths
         self.loc = Path(__file__).parent.absolute()
-        data_path = os.path.join(self.loc, "rp", "data")
+        data_path = os.path.join(self.loc, "testdata")
 
         # Set up test examples
         self.test_data = [
             {  # spiral data example
                 "type": "ventilation",
                 "name": "spiral ventilation",
-                "dl": os.path.join(data_path, "2DSpiralVentilationCCHMC", "raw_004.data"),
-                "rls": os.path.join(data_path, "2DSpiralVentilationCCHMC", "20211013_113717_CPIR_Vent_HANNING_2DSOS_WIP.sin"),
+                "dl": os.path.join(data_path, "2DSpiral", "2DSpiral.data"),
+                "rls": os.path.join(data_path, "2DSpiral", "2DSpiral.sin"),
                 "traj": None
             },
             {  # ctc gas ex example
                 "type": "gas exchange",
                 "name": "CTC gas exchange",
-                "dl": os.path.join(data_path, "3DRadialGas-exchangeDuke", "raw_207.data"),
-                "rls": os.path.join(data_path, "3DRadialGas-exchangeDuke", "20220112_113653_DukeIPF_Gas_Exchange.sin"),
+                "dl": os.path.join(data_path, "3DRadial_GXCTC", "3DRadial_GXCTC.data"),
+                "rls": os.path.join(data_path, "3DRadial_GXCTC", "3DRadial_GXCTC.sin"),
                 "traj": None
             },
             {  # gas ex w/ bonus spectra example
                 "type": "gas exchange",
                 "name": "gas exchange w/ bonus spectra",
-                "dl": os.path.join(data_path, "3DRadialGas-exchangeCCHMC", "raw_012.data"),
-                "rls": os.path.join(data_path, "3DRadialGas-exchangeCCHMC", "20220922_163107_CPIR_Gas_Exchange.sin"),
-                "traj": os.path.join(data_path, "3DRadialGas-exchangeCCHMC", "20200210_133229_Dissolved_Xe_20191008 - 3T-T1.sin")
+                "dl": os.path.join(data_path, "3DRadial_GXBonus", "3DRadial_GXBonus.data"),
+                "rls": os.path.join(data_path, "3DRadial_GXBonus", "3DRadial_GXBonus.sin"),
+                "traj": os.path.join(data_path, "3DRadial_GXBonus", "3DRadial_GXBonus_Traj.sin")
             },
             {  # gas ex w/ 2 echo example
                 "type": "gas exchange",
                 "name": "gas exchange w/ 2 echoes",
-                "dl": os.path.join(data_path, "3DRadialGas-exchange2Echo", "raw_1501.data"),
-                "rls": os.path.join(data_path, "3DRadialGas-exchange2Echo", "20250218_134601_Xenon_3D_radial_1ptDixon_2Echoes.sin"),
+                "dl": os.path.join(data_path, "3DRadial_GX2Echo", "3DRadial_GX2Echo.data"),
+                "rls": os.path.join(data_path, "3DRadial_GX2Echo", "3DRadial_GX2Echo.sin"),
                 "traj": None
             },
             {  # gas ex floret example
                 "type": "gas exchange",
                 "name": "gas exchange w/ floret",
-                "dl": os.path.join(data_path, "3DFLORETGas-exchange", "raw_111.data"),
-                "rls": os.path.join(data_path, "3DFLORETGas-exchange", "20251002_152616_Xenon_3D_FLORET_Dixon.sin"),
-                "traj": None # Needs to be created
+                "dl": os.path.join(data_path, "3DFLORET_GXBonus", "3DFLORET_GXBonus.data"),
+                "rls": os.path.join(data_path, "3DFLORET_GXBonus", "3DFLORET_GXBonus.sin"),
+                "traj": os.path.join(data_path, "3DFLORET_GXBonus", "3DFLORET_GXBonus_Traj.sin")
             },
         ]
 
