@@ -7,10 +7,16 @@ import matplotlib.pyplot as plt
 
 # Set paths
 loc = Path(__file__).parent.absolute()
-#dlName = loc / "testdata" / "2DSpiral" / "2DSpiral.data"
-#rlsName = loc / "testdata" / "2DSpiral" / "2DSpiral.sin"
-dlName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.data"
-rlsName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.sin"
+
+# dlName = loc / "testdata" / "2DSpiral" / "2DSpiral.data"
+# rlsName = loc / "testdata" / "2DSpiral" / "2DSpiral.sin"
+
+# dlName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.data"
+# rlsName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.sin"
+
+dlName = loc / "testdata" / "3DRadial_GX2Echo" / "3DRadial_GX2Echo.data"
+rlsName = loc / "testdata" / "3DRadial_GX2Echo" / "3DRadial_GX2Echo.sin"
+
 outDir = loc
 
 # Run converter
@@ -68,6 +74,7 @@ for acqnum in range(dset.number_of_acquisitions()):
         break
 
 # Initialiaze a storage array
+ncontrasts = 1 # for these examples only get first echo
 all_data = np.zeros((nreps, ncontrasts, nslices, ncoils,
                     eNz, eNy, eNx), dtype=np.complex64)
 all_traj = np.zeros((nreps, ncontrasts, nslices,
@@ -83,6 +90,8 @@ for acqnum in range(firstacq, dset.number_of_acquisitions()):
     slice = acq.idx.slice
     y = acq.idx.kspace_encode_step_1
     z = acq.idx.kspace_encode_step_2
+    if contrast > 0:
+        continue
     all_data[rep, contrast, slice, :, z, y, :] = acq.data
     all_traj[rep, contrast, slice, z, y, :, :] = acq.traj
 
