@@ -1,6 +1,8 @@
 
 # main script
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import os
 from pathlib import Path
 repo_root = Path(__file__).resolve().parent.parent
@@ -513,7 +515,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         
     if raw_file == None:
         rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
-            ("Philips .raw file", "*.raw")], initialdir=outDir)
+            ("Philips .raw file", "*.raw")])
     elif raw_file == '':
         rlsName = None
     else:
