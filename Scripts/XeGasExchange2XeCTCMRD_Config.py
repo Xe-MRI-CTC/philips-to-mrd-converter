@@ -23,6 +23,7 @@ class Config():
         self.orientation = 'Coronal'
 
         # SET DEFAULT TRAJECTORY INFORMATION
+        self.ext_traj = False
         self.gr_delay = 1.25  # gradient delay used in calculating trajectories
         self.trajorder = 2  # trajectory ordering for radial acqusitions, 2 is haltoned spiral, 1 is 2D golden means, 0 is stock Philips
 
@@ -43,13 +44,25 @@ class Config():
         # SET DEBUG FLAG
         self.debug_mode = False
 
-    def update(self, rls, mrdHeader):
+    def update(self, dl, rls, mrdHeader):
         '''
         Function to update the configuration parameters based on the data provided.
         Logic primarily based on scan name
         '''
-        # updates based on scan name
-        scan_name = rls.header['sin']['scan_name'][0][0].lower()
+        # Non scan-name-based updates:
+        # UPDATE DATA TYPE
+        # if multiple frequencies (stored as dynamics/repitition)
+        if mrdHeader.encoding[0].encodingLimits.repetition.maximum > 0:
+            self.data_type = DataType.DIXON     
+
+        # Scan-name-based updates:
+        if rls != None:
+            scan_name = rls.header['sin']['scan_name'][0][0].lower()
+        else:
+            # data/list doesn't have scan name info so can't update based on name
+            print('WARNING: No raw/lab/sin data prevents accurate update of parameters...')
+            print('WARNING: Make sure to update config parameters manually.')
+            return
 
         # UPDATE TRAJECTORY ORDER INFORMATION
         # two (V3) CPIR versions use golden means
@@ -62,9 +75,7 @@ class Config():
             self.gr_delay = +0.36 #likely not optimal
 
         # UPDATE DATA TYPE
-        # if multiple frequencies (stored as dynamics/repitition)
-        if mrdHeader.encoding[0].encodingLimits.repetition.maximum > 0:
-            self.data_type = DataType.DIXON                                  
+        # If larger gamma indicating proton, set to UTE                              
         if float(rls.header['sin']['acq_gamma'][0][0]) > 42000.0:  # Proton
             self.data_type = DataType.UTE
 
