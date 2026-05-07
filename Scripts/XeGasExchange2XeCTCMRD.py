@@ -1,6 +1,8 @@
 
 # main script
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import os
 from pathlib import Path
 repo_root = Path(__file__).resolve().parent.parent
@@ -15,7 +17,7 @@ import tkinter as tk
 import numpy as np
 import copy
 import math
-from Scripts.nmr_timefit import NMR_TimeFit
+from functions.nmr_timefit import NMR_TimeFit
 from scipy.fft import fft, fftshift
 import matplotlib.pyplot as plt
 from scipy.io import savemat
@@ -506,22 +508,26 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     if data_file == None:
         dlName = filedialog.askopenfilename(title='Select .data file', filetypes=[
             ("Philips .data file", "*.data")])
-    elif data_file == None:
+    elif data_file == '':
         dlName = None
     else:
         dlName = data_file
         
-    outDir = Path(dlName).parent.absolute()
     if raw_file == None:
         rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
-            ("Philips .raw file", "*.raw")], initialdir=outDir)
-    elif raw_file == None:
-        raw_file = None
+            ("Philips .raw file", "*.raw")])
+    elif raw_file == '':
+        rlsName = None
     else:
         rlsName = raw_file
 
-    path = os.path.normpath(rlsName)
+    if rlsName != None:
+        path = os.path.normpath(rlsName)
+    else:
+        path = os.path.normpath(dlName)
+
     fname = path.split(os.sep)
+    outDir = Path(path).parent.absolute()
     try:
         patientID = fname[-2]  # assume patient ID is name of folder
     except:
@@ -684,11 +690,15 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     
     # Modify to xenon MRD header
     dwell = mrd.xsd.userParameterDoubleType('dwell')
-    if data_set_config.ext_traj == True:
-        dwell.value = float(
-            inputDataTraj.header['sin']['sample_time_interval'][0][0])
-    else:
-        dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
+    try:
+        if data_set_config.ext_traj == True:
+            dwell.value = float(
+                inputDataTraj.header['sin']['sample_time_interval'][0][0])
+        else:
+            dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
+    except: # if only data list, don't know dwell
+        dwell.value = float(1.0)
+
     trajDescr.userParameterDouble.insert(0, dwell)
 
     ramp_time = mrd.xsd.userParameterLongType('ramp_time')
@@ -710,7 +720,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     # Determine Gas contamination removal
     if data_set_config.data_type == DataType.DIXON:
         if data_set_config.gas_contam_removal == True:
-            if data_set_config.bonus_spec == False:
+            if header.encoding[0].encodingLimits.set.maximum == 0: #bonus spectra stored in mixes/sets (philips/mrd)
                 print('Contamination removal not possible without bonus spectra - Turning it to false')
                 data_set_config.gas_contam_removal = False
         gas_contam_removed = mrd.xsd.userParameterLongType('gas_contam_removed')
@@ -718,7 +728,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         userParams.userParameterLong.insert(0, gas_contam_removed)     
         # which method   
         gas_contam_method = mrd.xsd.userParameterStringType('gas_contam_method')
-        gas_contam_method.value = data_set_config.gas_contam_method  # ensure 0/1
+        gas_contam_method.value = data_set_config.gas_contam_method
         userParams.userParameterString.insert(0, gas_contam_method) 
     
     if data_set_config.data_type == DataType.DIXON:  # set true flip angle for Xe Dixon acqs
@@ -727,20 +737,23 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
     if data_set_config.data_type != DataType.UTE:  # xenon has two trs for two frequencies
         # tr_factor accounts for different frequencies
-        pars.TR.insert(0, float(
-            rls.header['sin']['repetition_times'][0][0]) * data_set_config.tr_factor)
-        pars.TR.insert(1, float(
-            rls.header['sin']['repetition_times'][0][0]) * data_set_config.tr_factor)
+        try:
+            pars.TR.insert(0, header.sequenceParameters.TR[0] * len(data_set_config.contrast_order))
+            pars.TR.insert(1, header.sequenceParameters.TR[0] * len(data_set_config.contrast_order))
+        except:
+            pass # info not in data/list
 
     if data_set_config.data_type != DataType.UTE:  # xenon needs center freq and offset
         centFreq = mrd.xsd.userParameterLongType('xe_center_frequency')
-        centFreq.value = int(np.round(
-            float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(exp.H1resonanceFrequency_Hz)))
+        offFreq = mrd.xsd.userParameterLongType('xe_dissolved_offset_frequency')
+        try:
+            centFreq.value = int(np.round(
+                float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(exp.H1resonanceFrequency_Hz)))
+            offFreq.value = int(np.round(float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(
+                exp.H1resonanceFrequency_Hz) * data_set_config.xe_dissolved_offset_ppm / 1000000))
+        except: # info not in data/list
+            pass
         userParams.userParameterLong.insert(0, centFreq)
-        offFreq = mrd.xsd.userParameterLongType(
-            'xe_dissolved_offset_frequency')
-        offFreq.value = int(np.round(float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(
-            exp.H1resonanceFrequency_Hz) * data_set_config.xe_dissolved_offset_ppm / 1000000))
         userParams.userParameterLong.insert(0, offFreq)
 
     # Remove interleaving
@@ -762,6 +775,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     header.subjectInformation = subjectInfo
 
     # account for switching of data labels
+    orig_echoes = header.encoding[0].encodingLimits.contrast
     # repetitions are instead contrast with proton/gas/dissolved as 0/1/2
     if data_set_config.data_type != DataType.UTE:
         header.encoding[0].encodingLimits.contrast.minimum = min(
@@ -778,10 +792,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         header.encoding[0].encodingLimits.contrast.center = 0
 
     # echoes are no longer contrast but instead sets; contrast limits were updated above
-    header.encoding[0].encodingLimits.set.minimum = 1
-    header.encoding[0].encodingLimits.set.maximum = int(
-        rls.header['sin']['nr_echoes'][0][0])
-    header.encoding[0].encodingLimits.set.center = 1
+    header.encoding[0].encodingLimits.set = orig_echoes
 
     # calibration doesn't do any encoding
     if data_set_config.data_type == DataType.CALIBRATION:
@@ -800,9 +811,9 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         header.encoding[0].encodingLimits.kspace_encoding_step_1.minimum = 0
 
     # add additional encodings for 2nd echo in 1pt dixon
-    if data_set_config.multi_echo:
+    if orig_echoes.maximum > 0:
         # all echoes after first will be full projections
-        for echo_idx in range(1, int(rls.header['sin']['nr_echoes'][0][0])-1):
+        for echo_idx in range(1, orig_echoes.maximum-orig_echoes.minimum+1):
             header.encoding.append(copy.deepcopy(header.encoding[0]))
             header.encoding[echo_idx].encodingLimits.kspace_encoding_step_0.minimum = - \
                 (header.encoding[echo_idx].encodingLimits.kspace_encoding_step_0.maximum+1)
@@ -1261,7 +1272,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             acq_temp = dset.read_acquisition(10)
             data0 = acq_temp.data
             Npoints = data0.shape[-1]
-            traj_Npoints = crds.shape[2]
+            traj_Npoints = acq_temp.traj.shape[0]
             OvsFactor = int(Npoints / traj_Npoints)
 
             for acqnum in range(len(acqs)):
@@ -1332,7 +1343,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                     f"ky={acq_temp.idx.kspace_encode_step_1}"
                 )
         # set flag for bonus spectra (prior to reusing set for echoes)
-        if data_set_config.bonus_spec == True:
+        if acq_temp.idx.set > 0:
             acq_temp.measurement_uid = acq_temp.idx.set
             
         if data_set_config.ext_traj == True:
@@ -1365,7 +1376,12 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 acq_temp.idx.contrast = 1  # 1 = gas
             acq_temp.idx.kspace_encode_step_1 = 0
         if data_set_config.data_type == DataType.DIXON:
-            acq_temp.idx.contrast = data_set_config.contrast_order[acq_temp.idx.repetition]
+            try:
+                contrast = data_set_config.contrast_order[acq_temp.idx.repetition]
+            except: # innaccurate contrast order - potentially due to only data/list
+                print('WARNING: More repetitions than contrasts provided, setting to 0')
+                contrast = 0
+            acq_temp.idx.contrast = contrast
         if data_set_config.data_type == DataType.UTE:
             acq_temp.idx.contrast = 0
 

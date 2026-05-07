@@ -3,12 +3,20 @@ import numpy as np
 import ismrmrd as mrd
 import ismrmrd.xsd
 import philips2mrd as p2m
+import matplotlib.pyplot as plt
 
 # Set paths
 loc = Path(__file__).parent.absolute()
-dlName = loc / "rp" / "data" / "3DFLORETGas-exchange" / "raw_111.data"
-rlsName = loc / "rp" / "data" / "3DFLORETGas-exchange" / \
-    "20251002_152616_Xenon_3D_FLORET_Dixon.sin"
+
+# dlName = loc / "testdata" / "2DSpiral" / "2DSpiral.data"
+# rlsName = loc / "testdata" / "2DSpiral" / "2DSpiral.sin"
+
+# dlName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.data"
+# rlsName = loc / "testdata" / "3DRadial_GXCTC" / "3DRadial_GXCTC.sin"
+
+dlName = loc / "testdata" / "3DRadial_GX2Echo" / "3DRadial_GX2Echo.data"
+rlsName = loc / "testdata" / "3DRadial_GX2Echo" / "3DRadial_GX2Echo.sin"
+
 outDir = loc
 
 # Run converter
@@ -16,6 +24,7 @@ inputData = p2m.Ph2Mrd(dlName, rlsName)
 inputData.trajorder = 2
 inputData.delay = -1.25
 mrdName, rls, dl = inputData.convert(outDir)
+print("Data converted to mrd format: ", mrdName)
 
 # Load
 dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
@@ -45,6 +54,11 @@ if enc.encodingLimits.contrast != None:
 else:
     ncontrasts = 1
 
+if enc.reconSpace.matrixSize.z == 1:
+    ndim = 2
+else:
+    ndim = 3
+
 # loop through the acquisitions looking for noise scans
 firstacq = 0
 for acqnum in range(dset.number_of_acquisitions()):
@@ -60,15 +74,15 @@ for acqnum in range(dset.number_of_acquisitions()):
         break
 
 # Initialiaze a storage array
+ncontrasts = 1 # for these examples only get first echo
 all_data = np.zeros((nreps, ncontrasts, nslices, ncoils,
                     eNz, eNy, eNx), dtype=np.complex64)
+all_traj = np.zeros((nreps, ncontrasts, nslices,
+                    eNz, eNy, eNx, ndim), dtype=np.float32)
 
 # Loop through the rest of the acquisitions and stuff
 for acqnum in range(firstacq, dset.number_of_acquisitions()):
     acq = dset.read_acquisition(acqnum)
-
-    if acq.idx.contrast > 0 or acq.idx.set > 0:  # Skip those which may have different readout lengths
-        continue
 
     # Stuff into the buffer
     rep = acq.idx.repetition
@@ -76,8 +90,41 @@ for acqnum in range(firstacq, dset.number_of_acquisitions()):
     slice = acq.idx.slice
     y = acq.idx.kspace_encode_step_1
     z = acq.idx.kspace_encode_step_2
+    if contrast > 0:
+        continue
     all_data[rep, contrast, slice, :, z, y, :] = acq.data
+    all_traj[rep, contrast, slice, z, y, :, :] = acq.traj
+
+print("Data read in from ", mrdName)
+
+print(dset.read_xml_header().decode('utf-8'))
 
 dset.close()
 
-print("Data converted to mrd format: ", mrdName)
+# Plot trajectory
+fig = plt.figure(figsize=(13, 6))
+traj = all_traj[0,0,0,0,:,:,:]
+n_traj = 100
+n_traj = min(n_traj, len(traj))
+if acq.trajectory_dimensions == 2:
+    ax = fig.add_subplot(121)
+else:
+    ax = fig.add_subplot(121, projection="3d")
+colors = plt.cm.jet(np.linspace(0,1,n_traj))
+for i in range(n_traj):
+    ax.plot(*traj[i].T, color=colors[i], lw=1)
+ax.set_aspect('equal')
+ax.set_title('Trajectory')
+
+# Plot data
+slice_plot = nslices//2
+data = all_data[0,0,slice_plot,0,0,:,:]
+n_data = 100
+n_data = min(n_data, len(data))
+ax = fig.add_subplot(122)
+colors = plt.cm.jet(np.linspace(0,1,n_traj))
+for i in range(n_data):
+    ax.plot(np.abs(data[i,:]), color=colors[i], lw=1)
+ax.set_title('Data')
+plt.show()
+

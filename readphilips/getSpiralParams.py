@@ -370,7 +370,7 @@ def processSpiralParams(header, filename, scanner, delay):
         # scanner = Scanner('R56')
         FLORETR56 = False  # need to default this in case of data with no ad_hoc values
         isFloret = (int(sin['spiral_trajectory_shape'][0][0]) == 4)
-        spparams['COORDS'] = readSpiralCoords(filename, header, scanner)
+        spparams['COORDS'] = readSpiralCoords(filename, header, scanner).T
 
         # adhoc parameters sent to recon (read appropriate SpiralAdhoc .h file if present)
         defpath = os.path.dirname(__file__)+'/SpiralAdhoc'+scanner.ver+'.h'
@@ -543,7 +543,7 @@ def processSpiralParams(header, filename, scanner, delay):
                     filename, header, scanner), spparams, sin, delay)
             else:
                 spparams['COORDS_EXPANDED'] = rotatespirals(readSpiralCoords(
-                    filename, header, scanner), int(spparams['NR_SPIRAL_ARMS']), int(spparams['SPIRAL_SAMP']))
+                    filename, header, scanner), int(spparams['NR_SPIRAL_ARMS']), int(spparams['SPIRAL_SAMP'])).T
         except:
             print(
                 "Warning: An exception occurred in generating the expanded spiral coordinates.")

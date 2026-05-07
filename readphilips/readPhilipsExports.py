@@ -12,7 +12,11 @@ import sys
 import numpy as np
 import re
 import struct
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+
+# create nested dictionary
+def nested_dict():
+    return defaultdict(nested_dict)
 
 
 # match the correct filename case
@@ -274,6 +278,27 @@ def readList(filename):
         if label_idx < len(loc[0]):
             vals = [line[label_idx] for line in loc]
             info[label] = np.array(vals)
+
+    # grab general information
+    loc = [line for line in lines if(line[0] == '.')]
+    gen_info = nested_dict()
+    for line in loc:
+        # get indices
+        mix, echo, loca, rest = line[1:].strip().split(None, 3)
+        mix, echo, loca = int(mix), int(echo), int(loca)
+
+        # get name/value
+        name, sep, values_str = rest.partition(":")
+        name = name.strip()
+        tokens = values_str.split()
+
+        # convert to numbers
+        values = [float(t) if "." in t else int(t) for t in tokens]
+        value = values[0] if len(values) == 1 else tuple(values)
+
+        # save
+        gen_info[mix][echo][loca][name] = value
+    info['gen_info'] = gen_info
 
     # return header params and data locations
     return info
