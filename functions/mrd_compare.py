@@ -218,9 +218,18 @@ def _write_json_report(report_obj: Any, output_path: str, indent: int = 2) -> pa
     output.parent.mkdir(parents=True, exist_ok=True)
     with open(output, "w", encoding="utf-8") as f:
         json.dump(_jsonable(report_obj), f, indent=indent, sort_keys=False)
-        f.write("\\n")
     return output.resolve()
 
+
+def _maybe_ctypes_array_to_list(obj: Any) -> Optional[Any]:
+    """
+    Convert ctypes/array-like fixed-size objects from ismrmrd headers into
+    plain Python lists when possible.
+    """
+    try:
+        return [_normalize_scalar(x) for x in obj]
+    except Exception:
+        return None
 
 # =============================================================================
 # XML flattening / comparison
@@ -432,7 +441,12 @@ def _struct_like_to_dict(obj: Any, depth: int = 3) -> Any:
             except Exception:
                 out[name] = "<error>"
         return out
-
+    
+    # Try converting ctypes / fixed-size array-like objects to lists
+    as_list = _maybe_ctypes_array_to_list(obj)
+    if as_list is not None:
+        return as_list
+    
     return repr(obj)
 
 
@@ -536,7 +550,7 @@ def _scan_acquisitions(
     result: Dict[str, Any] = {
         "number_of_acquisitions": None,
         "scan_mode": "all" if max_acqs_to_scan is None else f"sampled<= {max_acqs_to_scan}",
-        "scanned_indices": [],
+        "scanned_count": 0,
         "sampled_acquisitions": [],
         "aggregates": {},
         "errors": [],
@@ -554,7 +568,7 @@ def _scan_acquisitions(
         sample_indices = set(_sample_indices(len(scan_indices), sample_acqs))
         actual_sampled_positions = set(scan_indices[i] for i in sample_indices) if scan_indices else set()
 
-        result["scanned_indices"] = scan_indices
+        result["scanned_count"] = len(scan_indices)
 
         # Aggregate counters
         number_of_samples = []
@@ -807,7 +821,7 @@ def _deep_diff(a: Any, b: Any, path: str = "") -> List[Dict[str, Any]]:
     """
     diffs: List[Dict[str, Any]] = []
 
-    if type(a) is type(b):
+    if type(a) is not type(b):
         diffs.append({
             "path": path or "/",
             "type": "type_mismatch",
@@ -1052,7 +1066,7 @@ def format_summary_text(summary: Dict[str, Any], show_xml_keys: int = 50) -> str
         lines.append("-" * 80)
         lines.append(f"Count:            {a.get('number_of_acquisitions')}")
         lines.append(f"Scan mode:        {a.get('scan_mode')}")
-        lines.append(f"Scanned count:    {len(a.get('scanned_indices', []))}")
+        lines.append(f"Scanned count:    {a.get('scanned_count', 0)}")
         agg = a.get("aggregates", {})
         lines.append("Aggregates:")
         lines.extend(_render_kv_lines(agg, indent=2))
