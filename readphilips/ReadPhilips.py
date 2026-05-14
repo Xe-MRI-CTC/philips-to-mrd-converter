@@ -1,13 +1,15 @@
 import os
 import time
 import numpy as np
-from .getSpiralParams import *
-from .getRadialParams import *
-from .readPhilipsExports import *
+import math
+from . import getSpiralParams
+from . import getRadialParams
+from . import readPhilipsExports
+
 
 class PhilipsData():
-    
-    def __init__(self, fname):        
+
+    def __init__(self, fname):
         self.fname = fname
         # check that the path actually exists
         if not os.path.exists(fname):
@@ -15,7 +17,7 @@ class PhilipsData():
         # get base filename and extension
         self.base = os.path.splitext(fname)[0]
         self.ext = os.path.splitext(fname)[1]
-        
+
         # define flag for type of data to be read
         self.readType = 0  # .data/.list is default
         if str(self.ext).lower() in ['.list', '.data', '.txt']:
@@ -28,21 +30,20 @@ class PhilipsData():
             self.readType = 3
         else:
             return
-        
+
         # set up SW and encoding detection
-        self._scanner = Scanner('')
+        self._scanner = getSpiralParams.Scanner('')
         if self.readType == 2:
             self.isMira = False
-            sin = readSin(self.base+'.sin')
+            sin = readPhilipsExports.readSin(self.base+'.sin')
             self.isMira = sin['isMira']
-            lab = readLab(self.base+'.lab', self.isMira)
+            lab = readPhilipsExports.readLab(self.base+'.lab', self.isMira)
             std_test = lab['label_type'] == b'LABEL_TYPE_STANDARD'
             coord_test = lab['control'] == b'CTRL_TRAJ_DATA'
             ind_test = (std_test & coord_test).nonzero()[0]
-            if(sum(ind_test) != 0): # this will be zero for pre-R56 data
+            if (sum(ind_test) != 0):  # this will be zero for pre-R56 data
                 self._scanner.ver = 'R56'
-                
-        
+
         self.chopON = False
         self.chopkzON = False
         self.selcoil = False
@@ -62,10 +63,8 @@ class PhilipsData():
         self.downsampleMode = 0
         self.rescale_type = 0
         self.raw_corr = 0
-        self.trajtype = 0 # Use for user added orderings of trajectories
-        self.delay = math.nan # Use for manual gr delays
-
-                    
+        self.trajtype = 0  # Use for user added orderings of trajectories
+        self.delay = math.nan  # Use for manual gr delays
 
     def compute(self):
 
@@ -78,30 +77,30 @@ class PhilipsData():
         if not os.path.exists(self.fname):
             return 0
 
-
         if self.readType == 0:
             if self.selcoil:
-                cur_coil = -1 #self.getVal('Coil')
+                cur_coil = -1  # self.getVal('Coil')
             else:
                 cur_coil = -1  # read all the data
 
             if self.selslice:
-                cur_loc = -1 #self.getVal('Slice')
+                cur_loc = -1  # self.getVal('Slice')
             else:
                 cur_loc = -1  # read all the data
 
-            if os.path.exists(filename_extcase(self.base+'.data')) and os.path.exists(filename_extcase(self.base+'.list')) \
-                    and self.readParamOnly is False:
+            if os.path.exists(readPhilipsExports.filename_extcase(self.base+'.data')) and \
+               os.path.exists(readPhilipsExports.filename_extcase(self.base+'.list')) \
+               and self.readParamOnly is False:
                 # read the data
                 (dat, dat_noi, dat_phc, hdr, dat_label, noi_label, phc_label) \
-                = readData(
-                    filename_extcase(self.base+'.data'),
-                    filename_extcase(self.base+'.list'),
-                    self.chopON, self.propTSE, self.propGRASE, self.cur_coil, self.cur_loc)
+                    = readPhilipsExports.readData(
+                               readPhilipsExports.filename_extcase(self.base+'.data'),
+                               readPhilipsExports.filename_extcase(self.base+'.list'),
+                               self.chopON, self.propTSE, self.propGRASE, self.cur_coil, self.cur_loc)
                 dat = dat.astype(np.float32)
                 try:
                     dat_noi = dat_noi.astype(np.float32)
-                except:
+                except Exception:
                     pass
 
                 header['list'] = hdr
@@ -109,7 +108,7 @@ class PhilipsData():
                 # YCC start
                 try:
                     dat_phc = dat_phc.astype(np.float32)
-                except:
+                except Exception:
                     pass
                 # YCC achieve
             elif self.readParamOnly is True:
@@ -125,18 +124,18 @@ class PhilipsData():
             else:
                 if self.paddingWidth > 256:
                     self.paddingWidth = 64
-                    
-##############################################################################                    
+
+##############################################################################
 
         elif self.readType == 1:
             # read the data
             cur_loc = -1  # read all the data
-            dat, hdr, dat_label = readRec(
+            dat, hdr, dat_label = readPhilipsExports.readRec(
                 self.base, self.cur_loc, self.rescale_type)
             dat = dat.astype(np.float32)
             header = hdr
-            
-##############################################################################            
+
+##############################################################################
 
         elif self.readType == 2:
             if self.readParamOnly is False:
@@ -144,36 +143,37 @@ class PhilipsData():
                 hanningWindow = float(self.hanningWindow)/100.0
 
             if self.selcoil:
-                cur_coil = -1 #self.getVal('Coil')
+                cur_coil = -1  # self.getVal('Coil')
             else:
                 cur_coil = -1  # read all the data
 
             if self.selslice:
-                cur_loc = -1 #self.getVal('Slice')
+                cur_loc = -1  # self.getVal('Slice')
             else:
                 cur_loc = -1  # read all the data
 
             # read the data
-            if os.path.exists(filename_extcase(self.base+'.lab')) and os.path.exists(filename_extcase(self.base+'.raw')) \
-                    and os.path.exists(filename_extcase(self.base+'.sin')) \
-                    and self.readParamOnly is False:
+            if os.path.exists(readPhilipsExports.filename_extcase(self.base+'.lab')) and \
+               os.path.exists(readPhilipsExports.filename_extcase(self.base+'.raw')) and \
+               os.path.exists(readPhilipsExports.filename_extcase(self.base+'.sin')) and \
+               self.readParamOnly is False:
                 (dat, dat_noi, dat_phc, rrs, rtops, hdr, dat_label, noi_label,
-                 phc_label) = readRaw(
+                 phc_label) = readPhilipsExports.readRaw(
                     self.base, self.raw_corr, self.chopON, self.cur_coil, self.cur_loc)
                 dat = dat.astype(np.complex64)
                 try:
                     rrs = rrs.squeeze()
                     rtops = rtops.squeeze()
                     rrPlusRtop = np.stack((rrs, rtops))
-                except:
+                except Exception:
                     pass
                 try:
                     dat_phc = dat_phc.astype(np.complex64)
-                except:
+                except Exception:
                     pass
                 try:
                     dat_noi = dat_noi.astype(np.complex64)
-                except:
+                except Exception:
                     pass
                 header.update(hdr)
 
@@ -186,13 +186,13 @@ class PhilipsData():
                     if self.paddingWidth > 256:
                         self.paddingWidth = 64
             else:
-                pass # read param only
+                pass  # read param only
 
         elif self.readType == 3:
             # read the data
             cur_coil = -1  # read all the data
             cur_loc = -1
-            dat, hdr, dat_label = readCpx(
+            dat, hdr, dat_label = readPhilipsExports.readCpx(
                 self.base, cur_coil, cur_loc)
             dat = dat.astype(np.complex64)
             header = hdr
@@ -200,9 +200,9 @@ class PhilipsData():
 
         if (self.readType in [0, 2]):
             if self._scanner.ver != 'R56':
-                if os.path.exists(filename_extcase(self.base+".txt")):
+                if os.path.exists(readPhilipsExports.filename_extcase(self.base+".txt")):
                     # read the parm file
-                    hdr = readParms(filename_extcase(self.base+".txt"))
+                    hdr = readPhilipsExports.readParms(readPhilipsExports.filename_extcase(self.base+".txt"))
 
                     # spOVERSAMPLING is set to either 1 or 2
                     if 'spOVERSAMPLING' in hdr:
@@ -217,13 +217,14 @@ class PhilipsData():
                         header['BNIspiral'] = hdr
                     else:
                         header = hdr
-                elif os.path.exists(filename_extcase(self.base+".sin")) and \
-                        os.path.exists(filename_extcase(self.base+".lab")):
+                elif os.path.exists(readPhilipsExports.filename_extcase(self.base+".sin")) and \
+                        os.path.exists(readPhilipsExports.filename_extcase(self.base+".lab")):
                     if self.readParamOnly is True:
                         self.isMira = False
-                        sin = readSin(filename_extcase(self.base+".sin"))
+                        sin = readPhilipsExports.readSin(readPhilipsExports.filename_extcase(self.base+".sin"))
                         self.isMira = sin['isMira']
-                        lab = readLab(filename_extcase(self.base+".lab"), self.isMira)
+                        lab = readPhilipsExports.readLab(readPhilipsExports.filename_extcase(self.base+".lab"),
+                                                         self.isMira)
                         header = dict()
                         header['headerType'] = 'lab-sin'
                         header['sin'] = sin
@@ -231,12 +232,11 @@ class PhilipsData():
                     else:
                         doDownsampling = self.dataDownsamplingFlag
 
-
-            elif os.path.exists(filename_extcase(self.base+".sin")) and \
-                    os.path.exists(filename_extcase(self.base+".lab")):
+            elif os.path.exists(readPhilipsExports.filename_extcase(self.base+".sin")) and \
+                    os.path.exists(readPhilipsExports.filename_extcase(self.base+".lab")):
                 if self.readParamOnly is True:
-                    sin = readSin(filename_extcase(self.base+".sin"))
-                    lab = readLab(filename_extcase(self.base+".lab"), self.isMira)
+                    sin = readPhilipsExports.readSin(readPhilipsExports.filename_extcase(self.base+".sin"))
+                    lab = readPhilipsExports.readLab(readPhilipsExports.filename_extcase(self.base+".lab"), self.isMira)
                     header = dict()
                     header['headerType'] = 'lab-sin'
                     header['sin'] = sin
@@ -244,14 +244,17 @@ class PhilipsData():
                 elif self.dataDownsamplingFlag is True:
                     doDownsampling = True
                     if 'sample_time_interval' in header:
-                        header['sin']['sample_time_interval'][0][0] = float(header['sin']['sample_time_interval'][0][0])*2
+                        header['sin']['sample_time_interval'][0][0] = \
+                            float(header['sin']['sample_time_interval'][0][0])*2
                     if 'spiral_nr_grd_smpls_rmp_dn' in header:
-                        header['sin']['spiral_nr_grd_smpls_rmp_dn'][0][0] = int(header['sin']['spiral_nr_grd_smpls_rmp_dn'][0][0])//2
+                        header['sin']['spiral_nr_grd_smpls_rmp_dn'][0][0] = \
+                            int(header['sin']['spiral_nr_grd_smpls_rmp_dn'][0][0])//2
                     if ('non_cart_min_enconding_nrs' in header) and ('non_cart_min_enconding_nrs' in header):
-                        header['sin']['non_cart_min_encoding_nrs'][0][0] = int(header['sin']['non_cart_min_encoding_nrs'][0][0])//4
+                        header['sin']['non_cart_min_encoding_nrs'][0][0] = \
+                            int(header['sin']['non_cart_min_encoding_nrs'][0][0])//4
                         header['sin']['non_cart_max_encoding_nrs'][0][0] = \
-                                int(header['sin']['non_cart_min_encoding_nrs'][0][0]) + \
-                                int(header['sin']['non_cart_max_encoding_nrs'][0][0])//2
+                            int(header['sin']['non_cart_min_encoding_nrs'][0][0]) + \
+                            int(header['sin']['non_cart_max_encoding_nrs'][0][0])//2
 
         # Convert from 2vec float to complex64
         if self.readType == 0 and self.readParamOnly is False:
@@ -265,7 +268,7 @@ class PhilipsData():
                 shape.pop(-1)
                 dat_phc = np.frombuffer(dat_phc.tobytes(), np.complex64)
                 dat_phc.shape = shape
-            except:
+            except Exception:
                 pass
 
             try:
@@ -273,7 +276,7 @@ class PhilipsData():
                 shape.pop(-1)
                 dat_noi = np.frombuffer(dat_noi.tobytes(), np.complex64)
                 dat_noi.shape = shape
-            except:
+            except Exception:
                 pass
 
         if self.readType in [0, 2] and self.chopkzON == 1 and self.readParamOnly is False:
@@ -317,7 +320,7 @@ class PhilipsData():
                     "  dim labels: "+str(noi_label)+"\n" \
                     "  dimensions: "+str(d1)+"\n" \
                     "  type: "+str(dat.dtype)+"\n"
-            except:
+            except Exception:
                 pass
             try:
                 d1 = list(dat_phc.shape)
@@ -325,12 +328,12 @@ class PhilipsData():
                     "  dim labels: "+str(phc_label)+"\n" \
                     "  dimensions: "+str(d1)+"\n" \
                     "  type: "+str(dat.dtype)+"\n"
-            except:
+            except Exception:
                 pass
             try:
                 ht = hdr['headerType']
                 info = info+"Header Type: '"+str(ht)+"'\n"
-            except:
+            except Exception:
                 pass
             self.info = info
         else:
@@ -409,25 +412,23 @@ class PhilipsData():
             self.data = dat
         try:
             self.noise = dat_noi
-        except:
+        except Exception:
             pass
         try:
             self.phc = dat_phc
-        except:
+        except Exception:
             pass
         try:
             self.rr_rtop = rrPlusRtop
-        except:
+        except Exception:
             pass
-        spparams = processSpiralParams(header, self.base, self._scanner, self.delay)
+        spparams = getSpiralParams.processSpiralParams(header, self.base, self._scanner, self.delay)
         if len(spparams) > 1:
             self.spparams = spparams
-        radparams = processRadialParams(header, self.trajtype, self.delay)
+        radparams = getRadialParams.processRadialParams(header, self.trajtype, self.delay)
         if len(radparams) > 2:
             self.radparams = radparams
         try:
             self.header = header
-        except:
+        except Exception:
             pass
-        
-        

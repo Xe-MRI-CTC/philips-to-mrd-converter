@@ -14,6 +14,7 @@ import re
 import struct
 from collections import OrderedDict, defaultdict
 
+
 # create nested dictionary
 def nested_dict():
     return defaultdict(nested_dict)
@@ -43,7 +44,7 @@ def oset(seq, idfun=None):
             if isinstance(x, (tuple, list)):
                 return tuple(x)
             else:
-                return(x)
+                return (x)
     seen = {}
     result = []
     for item in seq:
@@ -66,7 +67,7 @@ def oset_sorted(seq, idfun=None):
             if isinstance(x, (tuple, list)):
                 return tuple(x)
             else:
-                return(x)
+                return (x)
     seen = {}
     result = []
     for item in seq:
@@ -87,7 +88,7 @@ def oset_sorted(seq, idfun=None):
 # implemented from LabelTypeEnum.java
 def LabelTypeEnum(i):
 
-    if type(i) == int:
+    if type(i) is int:
         hex_i = hex(int(i))
 
         if '0x7f00' == hex_i:
@@ -105,7 +106,7 @@ def LabelTypeEnum(i):
         else:
             return 'LABEL_TYPE_MAX'
 
-    if type(i) == np.ndarray:
+    if type(i) is np.ndarray:
         n = len(i)
         s = 'LABEL_TYPE_MAX ' * n
         label_type = np.array(s.split(), dtype='|S20')
@@ -122,7 +123,7 @@ def LabelTypeEnum(i):
 
 def CtrlEnum(i):
 
-    if type(i) == int:
+    if type(i) is int:
         i = int(i)
 
         if i == -1:
@@ -195,7 +196,7 @@ def CtrlEnum(i):
         else:
             return 'CTRL_MAX'
 
-    if type(i) == np.ndarray:
+    if type(i) is np.ndarray:
         n = len(i)
         s = 'CTRL_MAX ' * n
         ctrl_type = np.array(s.split(), dtype='|S25')
@@ -263,7 +264,7 @@ def readList(filename):
     fil.close()
 
     # data loc lines start with ' '
-    loc = [line for line in lines if(line[0] == ' ')]
+    loc = [line for line in lines if (line[0] == ' ')]
     loc = [line.strip() for line in loc]
     loc = [re.split(' +', line) for line in loc]
 
@@ -280,7 +281,7 @@ def readList(filename):
             info[label] = np.array(vals)
 
     # grab general information
-    loc = [line for line in lines if(line[0] == '.')]
+    loc = [line for line in lines if (line[0] == '.')]
     gen_info = nested_dict()
     for line in loc:
         # get indices
@@ -371,7 +372,7 @@ def readData(filename_data, filename_list, chop_ky,
     nchan = len(channels)
     nchan_noi = len(noi_channels)
     nsamp = max(np.array(samples, np.int64)) // 8
-    if(len(noi_samples) > 0):
+    if (len(noi_samples) > 0):
         nsamp_noi = max(np.array(noi_samples, np.int64)) // 8
     if len(phc_samples) > 0:
         nsamp_phc = max(np.array(phc_samples, np.int64)) // 8
@@ -440,7 +441,7 @@ def readData(filename_data, filename_list, chop_ky,
     else:
         data_ph_concat = 0
 
-    if(len(noi_samples) > 0):
+    if (len(noi_samples) > 0):
         noi_shape = [nchan_noi, nsamp_noi, 2]
         noi_string = np.array(['ch', 'samp'])
         data_noi = np.zeros(noi_shape, dtype=np.float32)
@@ -510,7 +511,7 @@ def readData(filename_data, filename_list, chop_ky,
                 data_ph_concat[ch, mix, card, echo, loc, kz, rf, sign,
                                0:samples, :] = data
 
-        except:
+        except Exception:
             # if an error occurs then print out the indexing
             # information, then raise exception
             print("\n\tERROR: index out of range:")
@@ -554,15 +555,15 @@ def readData(filename_data, filename_list, chop_ky,
             data_ph_concat.shape[0:len(phc_string)]) > 1).nonzero()[0]]
     else:
         phc_labels = 0
-    if(len(noi_samples) > 0):
+    if (len(noi_samples) > 0):
         noi_labels = noi_string[(np.array(
             data_noi.shape[0:len(noi_string)]) > 1).nonzero()[0]]
     else:
         noi_labels = 0
 
     # return dictionary
-    return(data_concat, data_noi, data_ph_concat, hdr,
-           data_labels, noi_labels, phc_labels)
+    return (data_concat, data_noi, data_ph_concat, hdr,
+            data_labels, noi_labels, phc_labels)
 
 
 # for parsing .par files
@@ -594,8 +595,8 @@ def readPar(filename):
     fil.close()
 
     # data loc lines do not start with '#' or '.'
-    loc = [line for line in lines if(line[0] not in ['#', '.'] and
-                                     len(line) > 2)]
+    loc = [line for line in lines if (line[0] not in ['#', '.'] and
+                                      len(line) > 2)]
     loc = [line.strip() for line in loc]
     loc = [re.split(' +', line) for line in loc]
 
@@ -659,7 +660,7 @@ def readXML(filename):
     text = [line.strip('\'') for line in text]
     try:
         loc = list(zip(*[iter(text)]*len(tab)))
-    except:
+    except Exception:
         print("coding error: defined table length not equal to number of "
               "image attributes")
 
@@ -752,7 +753,7 @@ def readRec(filename, cur_loc, rescale_type):
         ngrad = len(gradorients)
         # must be at least version '4.1'
         version = '4.1'
-    except:
+    except Exception:
         pass
 
     try:
@@ -760,7 +761,7 @@ def readRec(filename, cur_loc, rescale_type):
         nlabel = len(labtypes)
         # must be version '4.2'
         version = '4.2'
-    except:
+    except Exception:
         pass
 
     # Sometimes images are appended to the REC file (e.g. T2 maps,
@@ -902,7 +903,7 @@ def readRec(filename, cur_loc, rescale_type):
                 data_concat[typ, seq, dyn, card, echo, loc, 0:recx,
                             0:recy] = data
 
-        except:
+        except Exception:
             # if an error occurs then print out the indexing
             # information, then raise exception
             print("\n\tERROR: index out of range:")
@@ -929,7 +930,7 @@ def readRec(filename, cur_loc, rescale_type):
         data_concat.shape[0:len(data_string)]) > 1).nonzero()[0]]
 
     # return dictionary
-    return(data_concat, hdr, data_labels)
+    return (data_concat, hdr, data_labels)
 
 
 # label file parsing
@@ -959,7 +960,7 @@ def readLab(filename, isMira):
     lab_index = 0
 
     # first calculate the number of useful labels and get the non-linear labels
-    fmt1 = '<'+'2If4H22h'  # non-lin label struct 
+    fmt1 = '<'+'2If4H22h'  # non-lin label struct
     num_labels = 0
     channel_nr = []
     nr_breakpoints = []
@@ -1052,7 +1053,7 @@ def readLab(filename, isMira):
     fil.close()
 
     # return dictionary
-    return(lab)
+    return (lab)
 
 
 # read/parse .sin text file
@@ -1083,7 +1084,7 @@ def readSin(filename):
     fil.close()
 
     # remove lines w/o colon delimiters
-    lines = [line for line in lines if(line.find(' : ') != -1)]
+    lines = [line for line in lines if (line.find(' : ') != -1)]
 
     # split on colons first
     #   -strip out colons at the end of lines
@@ -1091,7 +1092,7 @@ def readSin(filename):
         ':\r\n').strip()) for line in lines]
 
     # throw out single sub-array elements
-    lines = [line for line in lines if(len(line) > 1)]
+    lines = [line for line in lines if (len(line) > 1)]
 
     # load dictionary based on second element (ie. the item name)
     sin = OrderedDict()
@@ -1100,7 +1101,7 @@ def readSin(filename):
         try:
             sin[line[1]][0].extend(re.split(' +', line[2]))
             sin[line[1]][1].extend([re.split(' +', line[0])])
-        except:
+        except Exception:
             sin[line[1]] = [re.split(' +', line[2]), [re.split(' +', line[0])]]
 
     # some logic from RawLabData.java
@@ -1109,14 +1110,14 @@ def readSin(filename):
     try:
         sin['nr_samples'] = int(sin['max_encoding_numbers'][0][0]) \
             - int(sin['min_encoding_numbers'][0][0]) + 1
-    except:
+    except Exception:
         print("no max_encoding_numbers found, skipping")
 
     # if dc_max_encoding_number exists, then recalc
     try:
         sin['nr_samples'] = int(sin['dc_max_encoding_number'][0][0]) \
             - int(sin['dc_min_encoding_number'][0][0]) + 1
-    except:
+    except Exception:
         print("no dc_max_encoding_number found, skipping")
 
     # if dr_max_encoding_numbers exists, then recalc
@@ -1124,50 +1125,49 @@ def readSin(filename):
         sin['nr_samples'] = int(sin['dr_max_encoding_numbers'][0][0]) \
             - int(sin['dr_min_encoding_numbers'][0][0]) + 1
         sin['spectro'] = True
-    except:
+    except Exception:
         sin['spectro'] = False
 
     # if non_cart_max_encoding_numbers exists, then recalc
     try:
         sin['nr_samples'] = int(sin['non_cart_max_encoding_nrs'][0][0]) \
             - int(sin['non_cart_min_encoding_nrs'][0][0]) + 1
-    except:
+    except Exception:
         print("no non_cart_max_encoding_nrs found, skipping")
 
     # use channel_names to determine if data is Mira
     if any("DCC" or "MN" in name for name in sin['channel_names'][0]):
         sin['isMira'] = True
     else:
-        #R56 FLORET - start - use previous Mira logic for now
+        # R56 FLORET - start - use previous Mira logic for now
         try:
-            if int(sin['spiral_trajectory_shape'][0][0]) == 3: #FLORET
+            if int(sin['spiral_trajectory_shape'][0][0]) == 3:  # FLORET
                 try:
                     sin['relative_fear_bandwidth']
                     sin['isMira'] = True
-                except:
-                # if enable_pda exists then this is not a Mira file
+                except Exception:
+                    # if enable_pda exists then this is not a Mira file
                     try:
                         sin['enable_pda']
                         sin['isMira'] = False
-                    except:
+                    except Exception:
                         sin['isMira'] = True
             else:
                 sin['isMira'] = False
-        except:
-            #R56 FLORET -end
+        except Exception:
+            # R56 FLORET -end
             sin['isMira'] = False
-
 
     # try to determine if data is Mira (logic not correct for pre R5 non-Cart)
     # try:
     #     sin['relative_fear_bandwidth']
     #     sin['isMira'] = True
-    # except:
+    # except Exception:
     #     # if enable_pda exists then this is not a Mira file
     #     try:
     #         sin['enable_pda']
     #         sin['isMira'] = False
-    #     except:
+    #     except Exception:
     #         sin['isMira'] = True
 
     # phase encode lines
@@ -1178,7 +1178,7 @@ def readSin(filename):
     sin['nr_e3_profiles'] = int(sin['max_encoding_numbers'][0][3]) \
         - int(sin['min_encoding_numbers'][0][3]) + 1
 
-    return(sin)
+    return (sin)
 
 
 # set up the general Philips raw -> list data corrections
@@ -1192,21 +1192,21 @@ def setupCorrections(fil_raw, lab, sin, nchan, isMira):
     try:
         coil_factor = float(sin['scale_per_channel_arr'][0][1])
         coil_factor *= np.exp(-2j * float(sin['phase_per_channel_arr'][0][1]))
-    except:
+    except Exception:
         coil_factor = 1.0
     basic_corr['coil_factor'] = coil_factor
 
     try:
         pda_factors = np.array(sin['pda_ampl_factors'])
         pda_factors.shape = [nchan, 24]
-    except:
+    except Exception:
         pda_factors = np.ones([nchan, 24])
     basic_corr['pda_factors'] = pda_factors
 
     # if R5 or later
     try:
         relative_fear_bandwidth = float(sin['relative_fear_bandwidth'][0][0])
-    except:
+    except Exception:
         relative_fear_bandwidth = 0.0
     basic_corr['relative_fear_bandwidth'] = relative_fear_bandwidth
 
@@ -1224,9 +1224,9 @@ def setupCorrections(fil_raw, lab, sin, nchan, isMira):
         format_vals = lab['raw_format'][0:nl_ind] == 4
         format_vals |= lab['raw_format'][0:nl_ind] == 6
         if isMira:
-            seek_val = np.sum(np.where(format_vals, 
-                                   lab['coded_data_size'][0:nl_ind],
-                                   lab['data_size'][0:nl_ind]))
+            seek_val = np.sum(np.where(format_vals,
+                                       lab['coded_data_size'][0:nl_ind],
+                                       lab['data_size'][0:nl_ind]))
         else:
             seek_val = np.sum(lab['data_size'][0:nl_ind])
         seek_offset = int(seek_val + seek_offset)
@@ -1246,7 +1246,7 @@ def setupCorrections(fil_raw, lab, sin, nchan, isMira):
             breakpoints[nbp_chan+1, 1::] = breakpoints[nbp_chan, 1::]
             basic_corr['bp_chan'+str(channel)] = breakpoints
             seek_offset += data_size
-    except:
+    except Exception:
         print('No RXE Non-linear correction data present.')
 
     if enable_dc_corr:
@@ -1260,13 +1260,13 @@ def setupCorrections(fil_raw, lab, sin, nchan, isMira):
         format_vals = lab['raw_format'][0:dc_ind] == 4
         format_vals |= lab['raw_format'][0:dc_ind] == 6
         if isMira:
-            seek_val = np.sum(np.where(format_vals, 
-                                   lab['coded_data_size'][0:dc_ind],
-                                   lab['data_size'][0:dc_ind]))
+            seek_val = np.sum(np.where(format_vals,
+                                       lab['coded_data_size'][0:dc_ind],
+                                       lab['data_size'][0:dc_ind]))
         else:
             seek_val = np.sum(lab['data_size'][0:dc_ind])
         seek_offset = int(seek_val + seek_offset)
-        
+
         # read dc fixed data
         data_size = int(lab['data_size'][dc_ind])
         fil_raw.seek(seek_offset)
@@ -1280,7 +1280,7 @@ def setupCorrections(fil_raw, lab, sin, nchan, isMira):
         try:
             norm_factor = lab['normalization_factor'][dc_ind]
             norm_factor = norm_factor / ((2**15 - 1) * 10000.)
-        except:
+        except Exception:
             norm_factor = 1. / ((2**15 - 1) * 10000.)
         dc_fixed_arr *= norm_factor
         basic_corr['dc_fixed_arr'] = dc_fixed_arr
@@ -1304,7 +1304,7 @@ def basicCorrections(data, lab, sin, lab_pos, basic_corr, isMira):
     # apply RXE non-linearity correction
     try:
         norm_factor = int(lab['normalization_factor'][lab_pos])
-    except:
+    except Exception:
         norm_factor = 1.
     for chan in range(data.shape[0]):
         data[chan, ...] *= norm_factor
@@ -1327,7 +1327,7 @@ def basicCorrections(data, lab, sin, lab_pos, basic_corr, isMira):
                 data[chan, ...] *= y / 10000.
             else:
                 data[chan, ...] /= 10000.
-        except:
+        except Exception:
             data[chan, ...] /= 10000.
 
     # DC correction
@@ -1335,7 +1335,6 @@ def basicCorrections(data, lab, sin, lab_pos, basic_corr, isMira):
         dc_fixed_arr = basic_corr['dc_fixed_arr']
         dc_fixed_arr.shape = [dc_fixed_arr.shape[0], 1]
         data += dc_fixed_arr
-
 
     # measurement phase, PDA, REAR, and FEAR corrections
     random_phase = 2.*np.pi*float(lab['random_phase'][lab_pos]) / (2**16 - 1)
@@ -1377,7 +1376,7 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
 
     try:
         from .readMira import decodeMira
-    except:
+    except Exception:
         print("Error: Missing pyc for reading in lab/raw/sin data.")
         raise
 
@@ -1410,7 +1409,7 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
     # label file block size
     lab_pos = 0  # seek position
     isMira = sin['isMira']
-    print("Mira Data:",isMira)
+    print("Mira Data:", isMira)
 
     # determine if Philips FLORET RDD
     isSpiral = False
@@ -1423,14 +1422,14 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
     # get number of channels
     try:
         nchan = int(sin['max_measured_channels'][0][0])
-    except:
+    except Exception:
         try:
             nchan = int(sin['nr_measured_channels'][0][0])
-        except:
+        except Exception:
             nchan = 1
     try:
         nchan_phc = int(sin['ph_nr_measured_channels'][0][0])
-    except:
+    except Exception:
         nchan_phc = nchan
 
     # read the lab file
@@ -1439,7 +1438,7 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
 
     # get the general correction terms from the sin file
     if raw_corr:
-       basic_corr = setupCorrections(fil_raw, lab, sin, nchan, isMira)
+        basic_corr = setupCorrections(fil_raw, lab, sin, nchan, isMira)
 
     # find indices and seek offsets for data to be read
     std_case = lab['label_type'] == b'LABEL_TYPE_STANDARD'
@@ -1515,7 +1514,7 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
     ngrad = len(grad_echoes)
     nrfech = len(rf_echoes)
     nmeas_phc = len(phc_measurements)
-    
+
     retroCardiac = False
     ncard = len(phases)
     if (ncard == 1) and (len(rtops) > 1) and not isFloret:
@@ -1523,21 +1522,21 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
             return
         print("Retro cardiac mode active (beta)")
         retroCardiac = True
-        ncard = maxRetroCardPhases # arbitrary, cut down later
+        ncard = maxRetroCardPhases  # arbitrary, cut down later
 
-    if isFloret: # not compatible and rtops can be abused for false detection
-        retroCardiac = False 
+    if isFloret:  # not compatible and rtops can be abused for false detection
+        retroCardiac = False
         ncard = 1
-        ne3 = 1 #ne3 can also be abused
+        ne3 = 1  # ne3 can also be abused
 
     # allocate data arrays
     data_string = np.array(['chan', 'mix', 'dyn', 'card', 'echo', 'row',
                             'extra', 'loc', 'e3', 'meas', 'e2', 'e1', 'samp'])
     if cur_coil != -1:
-        arr = np.zeros([1, nmix, ndyn, ncard, necho, nrow, nextra, nloc, ne3, 
+        arr = np.zeros([1, nmix, ndyn, ncard, necho, nrow, nextra, nloc, ne3,
                         nmeas, ne2, ne1, nsamp], dtype=np.complex64)
     else:
-        arr = np.zeros([nchan, nmix, ndyn, ncard, necho, nrow, nextra, nloc, 
+        arr = np.zeros([nchan, nmix, ndyn, ncard, necho, nrow, nextra, nloc,
                         ne3, nmeas, ne2, ne1, nsamp], dtype=np.complex64)
     if len(phc_ind) > 1:
         phc_string = np.array(['chan', 'mix', 'card', 'echo', 'loc', 'e3',
@@ -1550,15 +1549,15 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
 
     if retroCardiac:
         # 1D in the channel, ncard, samples dimensions
-        cardTrackArr = np.zeros_like(arr[0,:,:,0,...,0], dtype = np.int16)
-        rrArr = np.zeros_like(arr[0,...,0], dtype = np.int16)
-        rtopArr = np.zeros_like(arr[0,...,0], dtype = np.int16)
-        #Initialize rr/rtop to -1 to show where data were not loaded
+        cardTrackArr = np.zeros_like(arr[0, :, :, 0, ..., 0], dtype=np.int16)
+        rrArr = np.zeros_like(arr[0, ..., 0], dtype=np.int16)
+        rtopArr = np.zeros_like(arr[0, ..., 0], dtype=np.int16)
+        # Initialize rr/rtop to -1 to show where data were not loaded
         rrArr[:] = -1
         rtopArr[:] = -1
     else:
-        rrArr = np.zeros([0], dtype = np.int16)
-        rtopArr = np.zeros([0], dtype = np.int16)
+        rrArr = np.zeros([0], dtype=np.int16)
+        rtopArr = np.zeros([0], dtype=np.int16)
 
     noi_string = np.array(['chan', 'samp'])
     noi_arr = np.zeros([nchan, nsamp_noi], dtype=np.complex64)
@@ -1595,11 +1594,11 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
                 array_dims = np.array(temp_data.shape, np.int64)
                 bb = np.frombuffer(bytebuff, np.uint8)
                 temp_data = decodeMira(bb, array_dims, act_data_size)
-            except:  # pure python implementation of Mira decoding (very slow)
+            except Exception:  # pure python implementation of Mira decoding (very slow)
                 try:
                     temp_data = decodeMira(bytebuff, temp_data, act_data_size)
-                except:
-                    print(f'WARNING: Data failed to be read in from .raw file')
+                except Exception:
+                    print('WARNING: Data failed to be read in from .raw file')
 
         else:
             fil_raw.seek(seek_offset)
@@ -1618,12 +1617,12 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
             else:
                 padded_data = temp_data
             cpxData = padded_data[:, :, 0] + 1j*padded_data[:, :, 1]
-        except:
+        except Exception:
             print("Wrong data size. Skipping line...")
             continue
 
         if raw_corr:
-            cxpData = basicCorrections(cpxData, lab, sin, lab_pos, basic_corr, isMira)
+            cxpData = basicCorrections(cpxData, lab, sin, lab_pos, basic_corr, isMira)  # noqa: F841
 
         # load cur indices from sets
         if control_type == 'phc':
@@ -1651,17 +1650,17 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
                     continue
                 # Get current repetition number from the tracking array
                 card = cardTrackArr[mix, dyn, echo, row, extra, loc,
-                    e3, meas, e2, e1]
+                                    e3, meas, e2, e1]
                 if card >= maxRetroCardPhases:
                     print("Too many retrospective cardiac phases (max 250), aborting")
                     raise
                 cardTrackArr[mix, dyn, echo, row, extra, loc,
-                    e3, meas, e2, e1] += 1
+                             e3, meas, e2, e1] += 1
                 # Fill the rr and rtop arrays directly from labels
                 rrArr[mix, dyn, card, echo, row, extra, loc,
-                    e3, meas, e2, e1] = lab['rr_interval'][card_lab_pos]
+                      e3, meas, e2, e1] = lab['rr_interval'][card_lab_pos]
                 rtopArr[mix, dyn, card, echo, row, extra, loc,
-                    e3, meas, e2, e1] = lab['rtop_offset'][card_lab_pos]
+                        e3, meas, e2, e1] = lab['rtop_offset'][card_lab_pos]
             else:
                 card = phases.index(lab['cardiac_phase_nr'][lab_pos])
 
@@ -1706,14 +1705,14 @@ def readRaw(filename, raw_corr, chop_ky, cur_coil, cur_loc):
     # For some reason the real and imaginary channels are swapped
     arr = np.conj(arr)
     arr *= np.exp(1j * np.pi/2.0)
-    
+
     if retroCardiac:
         # Discard any unused phases
         maxCardNum = np.amax(cardTrackArr) - 1
         print("Maximum number of cardiac phases detected: ", maxCardNum)
-        arr = arr[:,:,:,0:maxCardNum,...]
-        rrArr = rrArr[:,:,0:maxCardNum,...]
-        rtopArr = rtopArr[:,:,0:maxCardNum,...]
+        arr = arr[:, :, :, 0:maxCardNum, ...]
+        rrArr = rrArr[:, :, 0:maxCardNum, ...]
+        rtopArr = rtopArr[:, :, 0:maxCardNum, ...]
 
     # convert to numpy array
     return (arr, noi_arr, echo_arr, rrArr, rtopArr, hdr, data_labels, noi_labels, phc_labels)

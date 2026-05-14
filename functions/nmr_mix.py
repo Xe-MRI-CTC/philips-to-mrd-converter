@@ -1,7 +1,8 @@
 """NMR mix class."""
 
 import numpy as np
- 
+
+
 class NMR_Mix:
     """Base Class for curve fitting for spectroscopy.
 
@@ -61,11 +62,11 @@ class NMR_Mix:
                     + 1j * 2 * np.pi * tdata * self.freq[k]
                 ) * np.exp(-(tdata**2) * 4 * np.log(2) * self.fwhmG[k] ** 2) * np.exp(
                     -np.pi * tdata * self.fwhmL[k]
-                ) 
+                )
         else:
             raise ValueError("Method must be either 'voigt' or 'lorentzian'.")
         return time_sig
- 
+
     def get_init_params(self):
         """Get initial parameters for fitting."""
         return np.concatenate(
@@ -102,7 +103,7 @@ class NMR_Mix:
         self.fwhmG = np.array([fwhmG]).flatten()
         self.fwhmL = np.array([fwhmL]).flatten()
         self.sort_freq()
-        
+
     def calcComponentSpectralDomainSignal(self, f):
         # Calculates the spectral domain signal from the individual components
         # of the NMR_mix at the given spectral frequencies (f is in Hz).
@@ -124,7 +125,7 @@ class NMR_Mix:
         componentSpectralDomainSignal = \
             self.area * np.exp(1j * np.pi / 180 * self.phase) / \
             (1j * 2 * np.pi * (f - self.freq) + np.pi * self.fwhmL)
-                
+
         return componentSpectralDomainSignal
 
     def calcComponentSpectralDomainSignal_dis(self, f):
@@ -140,8 +141,8 @@ class NMR_Mix:
             componentSpectralDomainSignal[:, iComp] = \
                 self.area[iComp] * np.exp(1j * np.pi / 180 * self.phase[iComp]) / \
                 (1j * 2 * np.pi * (f - self.freq[iComp]) + np.pi * self.fwhmL[iComp])
-              
-        return componentSpectralDomainSignal    
+
+        return componentSpectralDomainSignal
 
     def calcComponentTimeDomainSignal(self, t):
         # Calculates the time domain signal from the individual components
@@ -167,7 +168,7 @@ class NMR_Mix:
                 * np.exp(-np.pi * t * self.fwhmL[iComp])
 
         return componentTimeDomainSignal
-    
+
     def calcSpectralDomainSignal(self, f):
         # Calculates the spectral domain signal from the mix of NMR components
         # at the given spectral frequencies (f is in Hz).

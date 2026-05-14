@@ -402,7 +402,7 @@ def processSpiralParams(header, filename, scanner, delay):
                     FLORETR56 = True
                 else:
                     FLORETR56 = False
-            except:
+            except Exception:
                 FLORETR56 = False
         else:
             pass
@@ -480,7 +480,7 @@ def processSpiralParams(header, filename, scanner, delay):
             base_te = np.array(sin['echo_times'][0][0:necho], dtype=np.float32)
 
         if 'dixon_enable' in sin:  # dixon
-            dixon_offset_te = float(sin['dixon_first_echo_time'][0][0])
+            # dixon_offset_te = float(sin['dixon_first_echo_time'][0][0])
             teshifts = (float(sin['dixon_delta_te'][0][0]) *
                         np.arange(num_shifts))
             echo_time = base_te + teshifts
@@ -544,7 +544,7 @@ def processSpiralParams(header, filename, scanner, delay):
             else:
                 spparams['COORDS_EXPANDED'] = rotatespirals(readSpiralCoords(
                     filename, header, scanner), int(spparams['NR_SPIRAL_ARMS']), int(spparams['SPIRAL_SAMP'])).T
-        except:
+        except Exception:
             print(
                 "Warning: An exception occurred in generating the expanded spiral coordinates.")
 
@@ -626,14 +626,10 @@ def get_floret_alpha_beta_hub_idx(coord_params, py_number, pz_number):
 
 
 def apply_rotation(arm_from_mpf, arms_per_hub, alpha0, beta_idx, alpha_idx, hub_idx):
-    
-    #PHI_GOLD_SP = (1 + np.sqrt(5)) / 2  # Golden ratio
-    # Compute beta
-    #beta = (-beta_idx * PHI_GOLD_SP * np.pi / 180.0) % (-2.0 * np.pi)
-    
-    golden_angle = np.pi * (3.0 - np.sqrt(5.0)) 
+
+    golden_angle = np.pi * (3.0 - np.sqrt(5.0))
     beta = np.mod(-beta_idx * golden_angle, 2.0 * np.pi)
-    
+
     cb = np.cos(beta)
     sb = np.sin(beta)
 

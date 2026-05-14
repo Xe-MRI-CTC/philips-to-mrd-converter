@@ -1,29 +1,27 @@
-
-# main script
 import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import os
-from pathlib import Path
-repo_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(repo_root))
-import philips2mrd as p2m
-import readphilips.ReadPhilips as rp
 import ismrmrd as mrd
-from Scripts.XeGasExchange2XeCTCMRD_Config import Config, DataType
 import argparse
 from tkinter import filedialog
 import tkinter as tk
 import numpy as np
 import copy
 import math
-from functions.nmr_timefit import NMR_TimeFit
-from scipy.fft import fft, fftshift
 import matplotlib.pyplot as plt
 from scipy.io import savemat
 
+# local module import
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import philips2mrd as p2m  # noqa: E402
+import readphilips.ReadPhilips as rp  # noqa: E402
+from Scripts.XeGasExchange2XeCTCMRD_Config import Config, DataType  # noqa: E402
+from functions.nmr_timefit import NMR_TimeFit  # noqa: E402
+
+
 # Constants
 H1_GAMMA = 42577.4688
+
 
 def make_filtered_mrd_by_indices(src_path, dst_path, keep_indices):
     src = mrd.Dataset(str(src_path), "dataset", create_if_needed=False)
@@ -36,6 +34,7 @@ def make_filtered_mrd_by_indices(src_path, dst_path, keep_indices):
 
     src.close()
     dst.close()
+
 
 def find_odd_spectra_indices(acqs, min_ratio=2.0):
     """
@@ -93,6 +92,7 @@ def find_odd_spectra_indices(acqs, min_ratio=2.0):
         "odd_sizes": ns[odd_mask].tolist(),
     }
     return odd_indices, info
+
 
 def plot_complex_spectra_panels(data, fs=None, do_fft=False, suptitle='Spectra'):
     """
@@ -155,6 +155,7 @@ def plot_complex_spectra_panels(data, fs=None, do_fft=False, suptitle='Spectra')
     plt.tight_layout()
     plt.show()
 
+
 def movmean_truncate(x: np.ndarray, n: int, axis: int = 0) -> np.ndarray:
     """
     MATLAB-like moving mean along a given axis.
@@ -180,6 +181,7 @@ def movmean_truncate(x: np.ndarray, n: int, axis: int = 0) -> np.ndarray:
 
     return np.apply_along_axis(lambda v: movmean_1d(v, n), axis, x)
 
+
 def movmean(x: np.ndarray, n: int, axis: int = 0) -> np.ndarray:
     """
     Moving mean along a given axis, MATLAB-like 'movmean(..., n)'.
@@ -195,6 +197,7 @@ def movmean(x: np.ndarray, n: int, axis: int = 0) -> np.ndarray:
     # Apply 1D convolution along the specified axis
     return np.apply_along_axis(lambda v: np.convolve(v, kernel, mode="same"), axis, x)
 
+
 def downsample(x: np.ndarray, factor: int, axis: int = 0) -> np.ndarray:
     """
     Downsample by integer factor along a specified axis (MATLAB downsample behavior).
@@ -204,6 +207,7 @@ def downsample(x: np.ndarray, factor: int, axis: int = 0) -> np.ndarray:
     slc = [slice(None)] * x.ndim
     slc[axis] = slice(None, None, factor)
     return x[tuple(slc)]
+
 
 def gas_phase_contamination_removal(
     data_dissolved: np.ndarray,
@@ -235,7 +239,7 @@ def gas_phase_contamination_removal(
         Gas phase corrected dissolved k-space data of shape (n_projections, n_points)
     Author: Matt Willmering
     Paper: https://pubmed.ncbi.nlm.nih.gov/33665905/
-    ''' 
+    '''
     # Make sure inputs are arrays
     data_dissolved = np.asarray(data_dissolved)
     data_gas = np.asarray(data_gas)
@@ -262,7 +266,7 @@ def gas_phase_contamination_removal(
     # Step1PhaseShift = time' * FreqOffset * 2 * pi;
     # Step1ContamKSpace = GasKSpace .* exp(1i*Step1PhaseShift);
     # ------------------------------------------------------------------
-    step1_phase_shift = time[:, None] *freq_gas_acq_diss * 2.0 * np.pi  # [RO, 1]
+    step1_phase_shift = time[:, None] * freq_gas_acq_diss * 2.0 * np.pi  # [RO, 1]
     step1_contam_kspace = data_gas * np.exp(1j * step1_phase_shift)       # [RO, Projections]
 
     # ------------------------------------------------------------------
@@ -298,6 +302,7 @@ def gas_phase_contamination_removal(
 
     return corrected_diss_kspace
 
+
 def make_timefit_x0_feasible(obj, lb, ub):
     """
     Modifies obj.area/freq/fwhmL/fwhmG/phase so that the flattened x0
@@ -315,13 +320,14 @@ def make_timefit_x0_feasible(obj, lb, ub):
 
     # Write back into the object (order must match x0 construction)
     x0m = x0.reshape(5, -1)   # [area; freq; fwhmL; fwhmG; phase] each length 3
-    obj.area  = x0m[0, :]
-    obj.freq  = x0m[1, :]
+    obj.area = x0m[0, :]
+    obj.freq = x0m[1, :]
     obj.fwhmL = x0m[2, :]
     obj.fwhmG = x0m[3, :]
     obj.phase = x0m[4, :]
 
     return obj
+
 
 def plot_traj(crds, n_traj=10):
     """
@@ -332,12 +338,13 @@ def plot_traj(crds, n_traj=10):
     n_traj = min(n_traj, len(traj))
 
     ax = plt.figure().add_subplot(111, projection="3d")
-    colors = plt.cm.jet(np.linspace(0,1,n_traj))
+    colors = plt.cm.jet(np.linspace(0, 1, n_traj))
 
     for i in range(n_traj):
         ax.plot(*traj[i].T, color=colors[i], lw=1)
 
     plt.show()
+
 
 def write_kspace_to_acqs(acqs, acq_idx, kspace_mat, mode="pad"):
     """
@@ -392,6 +399,7 @@ def write_kspace_to_acqs(acqs, acq_idx, kspace_mat, mode="pad"):
             if traj_trim is not None:
                 acqs[i].traj[:] = traj_trim
 
+
 def add_bonus_idx_to_user_params(userParams, bonus_idx):
     """
     Store bonus_idx in MRD header user parameters.
@@ -420,6 +428,7 @@ def add_bonus_idx_to_user_params(userParams, bonus_idx):
 
     return userParams
 
+
 def reorder_crds_to_scanner_labels(acqs, crds, rep_to_use=None, set_to_use=None):
     """
     Convert crds from acquisition-order profile columns to scanner ky-label columns.
@@ -431,7 +440,7 @@ def reorder_crds_to_scanner_labels(acqs, crds, rep_to_use=None, set_to_use=None)
     Output:
         crds_out shape = same as crds, but column index now matches acq.idx.kspace_encode_step_1
     """
-    n_interleaves, n_profiles = crds.shape[0], crds.shape[1]
+    _, n_profiles = crds.shape[0], crds.shape[1]
 
     # Build ky appearance order from one repetition / one echo only
     ky_order = []
@@ -498,22 +507,23 @@ def reorder_crds_to_scanner_labels(acqs, crds, rep_to_use=None, set_to_use=None)
 
     return crds_out, ky_order
 
+
 def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     # Get paths
     if data_file == '' and raw_file == '':
         raise RuntimeError(
-            f'No raw data file passed. To use file selection dialog, pass None.')
+            'No raw data file passed. To use file selection dialog, pass None.')
     root = tk.Tk()
     root.withdraw()
-    if data_file == None:
+    if data_file is None:
         dlName = filedialog.askopenfilename(title='Select .data file', filetypes=[
             ("Philips .data file", "*.data")])
     elif data_file == '':
         dlName = None
     else:
         dlName = data_file
-        
-    if raw_file == None:
+
+    if raw_file is None:
         rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
             ("Philips .raw file", "*.raw")])
     elif raw_file == '':
@@ -521,7 +531,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     else:
         rlsName = raw_file
 
-    if rlsName != None:
+    if rlsName is not None:
         path = os.path.normpath(rlsName)
     else:
         path = os.path.normpath(dlName)
@@ -530,7 +540,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     outDir = Path(path).parent.absolute()
     try:
         patientID = fname[-2]  # assume patient ID is name of folder
-    except:
+    except Exception:
         print('Folder not found.')
         raise FileNotFoundError('Folder not found.')
 
@@ -543,29 +553,29 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     inputData.delay = data_set_config.gr_delay
     mrdName, rls, dl = inputData.convert(outDir)
     dset = mrd.Dataset(mrdName, "dataset", create_if_needed=False)
-    
+
     # Get Config for XeMRD scan
     header = mrd.xsd.CreateFromDocument(dset.read_xml_header())
     data_set_config.update(dl, rls, header)
- 
+
     n_acq_total = dset.number_of_acquisitions()
     n_acq_use = n_acq_total
     bonus_idx = []
     bonus_info = {}
-    if data_set_config.data_type == DataType.DIXON:     
-        #if data_set_config.gas_contam_removal or data_set_config.exclude_bonus_spec:
-        acqs_init      = [None] * n_acq_total
+    if data_set_config.data_type == DataType.DIXON:
+        # if data_set_config.gas_contam_removal or data_set_config.exclude_bonus_spec:
+        acqs_init = [None] * n_acq_total
         for acqnum in range(n_acq_total):
             acq_temp = dset.read_acquisition(acqnum)
             acqs_init[acqnum] = acq_temp
         bonus_idx, bonus_info = find_odd_spectra_indices(acqs_init)
         print('bonus_idx = ', bonus_idx)
-    
+
         n_acq_use = n_acq_total - (len(bonus_idx) if data_set_config.exclude_bonus_spec else 0)
         print("n_acq_total =", n_acq_total, "n_acq_use =", n_acq_use,
-            "exclude_bonus_spec =", data_set_config.exclude_bonus_spec)
+              "exclude_bonus_spec =", data_set_config.exclude_bonus_spec)
 
-    if data_set_config.data_type == DataType.DIXON: 
+    if data_set_config.data_type == DataType.DIXON:
         # If requested, create a new MRD file that excludes the bonus_spec acquisition
         if data_set_config.exclude_bonus_spec and not data_set_config.gas_contam_removal:
 
@@ -573,7 +583,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             filteredPath = mrdPath.with_name(mrdPath.stem + "_noBonus.h5")
 
             # build filtered file
-            keep_idx = [i for i in range(dset.number_of_acquisitions()) 
+            keep_idx = [i for i in range(dset.number_of_acquisitions())
                         if i not in bonus_idx]
             make_filtered_mrd_by_indices(mrdPath, filteredPath, keep_idx)
 
@@ -581,20 +591,20 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             dset.close()
             mrdName = filteredPath
             dset = mrd.Dataset(str(mrdName), "dataset", create_if_needed=False)
-            data_set_config.gas_contam_removal = False # force it here just in case
+            data_set_config.gas_contam_removal = False  # force it here just in case
             print("Using filtered MRD:", mrdName, "acqs =", dset.number_of_acquisitions())
         else:
             print("Using original MRD:", mrdName, "acqs =", dset.number_of_acquisitions())
-            
-    debug_mode = data_set_config.debug_mode 
-    
+
+    debug_mode = data_set_config.debug_mode
+
     # Get path to sin file trajectories if necessary
     if data_set_config.data_type == DataType.CALIBRATION:
-        data_set_config.ext_traj == False
+        data_set_config.ext_traj is False
     if traj_file is not None:
         data_set_config.ext_traj = True
-    if data_set_config.ext_traj == True:
-        if traj_file == None:
+    if data_set_config.ext_traj is True:
+        if traj_file is None:
             # Directory containing the running script
             script_dir = Path(__file__).resolve().parent
             repo_root = script_dir.parent
@@ -603,20 +613,20 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 ext_coords = repo_root / "resources" / "Polarean_Xenon_FLORET_Dixon_20251205-NoSpectra.sin"
             else:
                 ext_coords = repo_root / "resources" / "20221025_144528_DukeIPF_Gas_Exchange.sin"
-            
+
             if data_set_config.institution == 'CCHMC':
                 ext_coords = repo_root / "resources" / "CCHMC_Dissolved_Xe_20191008 - 3T-T1.sin"
 
             if data_set_config.institution == 'Polarean':
                 ext_coords = repo_root / "resources" / "Polarean_Xenon_Radial_Dixon_20260211_NoSpec.sin"
-                
+
             # Safety check
             if not ext_coords.exists():
                 ext_coords = filedialog.askopenfilename(title='Select trajectory .sin file', filetypes=[
                     ("Trajectory .sin file", "*.sin")], initialdir=outDir)
         else:
             ext_coords = traj_file
-            
+
         inputDataTraj = rp.PhilipsData(ext_coords)
         inputDataTraj.trajtype = data_set_config.trajorder
         print('config_traj_type = ', inputDataTraj.trajtype)
@@ -626,7 +636,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         try:
             traj_type = int(
                 inputDataTraj.header['sin']['k_space_traj_type'][0][0])
-        except:
+        except Exception:
             traj_type = 0
         print('traj_type = ', traj_type)
 
@@ -636,9 +646,9 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 crds_flyback = inputDataTraj.radparams['COORDS_FLYBACK']
         elif traj_type == 2:  # spiral
             crds = inputDataTraj.spparams['COORDS_EXPANDED']
-            
+
         # Haltoned Spiral, multiple interleaves: remap columns from acquisition order -> scanner ky labels
-        if data_set_config.data_type == DataType.DIXON: 
+        if data_set_config.data_type == DataType.DIXON:
             n_interleaves = crds.shape[0]
             if data_set_config.trajorder == 2 and n_interleaves > 1:
                 acqs_for_perm = [dset.read_acquisition(i) for i in range(dset.number_of_acquisitions())]
@@ -651,20 +661,20 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                     print(ky_order[:50])
 
                 if 'crds_flyback' in locals():
-                    crds_flyback, _ = reorder_crds_to_scanner_labels(acqs_for_perm, crds_flyback, rep_to_use=rep0)            
-            
-    if debug_mode:      
+                    crds_flyback, _ = reorder_crds_to_scanner_labels(acqs_for_perm, crds_flyback, rep_to_use=rep0)
+
+    if debug_mode:
         # save coords as .mat file
         save_dir = os.path.dirname(data_file)
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, "crds.mat")
         # save
         savemat(save_path, {'crds': crds.astype('float64')})
-        print(f"Saved to: {save_path}")                    
-  
-    if data_set_config.data_type == DataType.DIXON and debug_mode:        
+        print(f"Saved to: {save_path}")
+
+    if data_set_config.data_type == DataType.DIXON and debug_mode:
         plot_traj(crds, n_traj=100)
-    
+
     # Get dset header
     studyInfo = header.studyInformation
     subjectInfo = mrd.xsd.subjectInformationType()
@@ -687,55 +697,55 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     orientation = mrd.xsd.userParameterStringType('orientation')
     orientation.value = data_set_config.orientation
     userParams.userParameterString.insert(0, orientation)
-    
+
     # Save bonus spectra indices in header
     if data_set_config.data_type == DataType.DIXON:
-        if data_set_config.gas_contam_removal and not data_set_config.exclude_bonus_spec:    
+        if data_set_config.gas_contam_removal and not data_set_config.exclude_bonus_spec:
             userParams = add_bonus_idx_to_user_params(userParams, bonus_idx)
-    
+
     # Modify to xenon MRD header
     dwell = mrd.xsd.userParameterDoubleType('dwell')
     try:
-        if data_set_config.ext_traj == True:
+        if data_set_config.ext_traj is True:
             dwell.value = float(
                 inputDataTraj.header['sin']['sample_time_interval'][0][0])
         else:
             dwell.value = float(rls.header['sin']['sample_time_interval'][0][0])
-    except: # if only data list, don't know dwell
+    except Exception:  # if only data list, don't know dwell
         dwell.value = float(1.0)
 
     trajDescr.userParameterDouble.insert(0, dwell)
 
     ramp_time = mrd.xsd.userParameterLongType('ramp_time')
     ramp_time.value = 0
-    if data_set_config.ext_traj == True:
+    if data_set_config.ext_traj is True:
         try:
             ramp_time.value = round(
                 float(inputDataTraj.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
-        except:
+        except Exception:
             pass
     else:
         try:
             ramp_time.value = round(
                 float(rls.header['sin']['non_cart_fid_slope'][0][0])*dwell.value)
-        except:
+        except Exception:
             pass
     trajDescr.userParameterLong.insert(0, ramp_time)
 
     # Determine Gas contamination removal
     if data_set_config.data_type == DataType.DIXON:
-        if data_set_config.gas_contam_removal == True:
-            if header.encoding[0].encodingLimits.set.maximum == 0: #bonus spectra stored in mixes/sets (philips/mrd)
+        if data_set_config.gas_contam_removal is True:
+            if header.encoding[0].encodingLimits.set.maximum == 0:  # bonus spectra stored in mixes/sets (philips/mrd)
                 print('Contamination removal not possible without bonus spectra - Turning it to false')
                 data_set_config.gas_contam_removal = False
         gas_contam_removed = mrd.xsd.userParameterLongType('gas_contam_removed')
         gas_contam_removed.value = int(data_set_config.gas_contam_removal)  # ensure 0/1
-        userParams.userParameterLong.insert(0, gas_contam_removed)     
-        # which method   
+        userParams.userParameterLong.insert(0, gas_contam_removed)
+        # which method
         gas_contam_method = mrd.xsd.userParameterStringType('gas_contam_method')
         gas_contam_method.value = data_set_config.gas_contam_method
-        userParams.userParameterString.insert(0, gas_contam_method) 
-    
+        userParams.userParameterString.insert(0, gas_contam_method)
+
     if data_set_config.data_type == DataType.DIXON:  # set true flip angle for Xe Dixon acqs
         pars.flipAngle_deg.insert(0, data_set_config.flip_angle_gas)
         pars.flipAngle_deg.insert(1, data_set_config.flip_angle_dis)
@@ -745,8 +755,8 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         try:
             pars.TR.insert(0, header.sequenceParameters.TR[0] * len(data_set_config.contrast_order))
             pars.TR.insert(1, header.sequenceParameters.TR[0] * len(data_set_config.contrast_order))
-        except:
-            pass # info not in data/list
+        except Exception:
+            pass  # info not in data/list
 
     if data_set_config.data_type != DataType.UTE:  # xenon needs center freq and offset
         centFreq = mrd.xsd.userParameterLongType('xe_center_frequency')
@@ -756,7 +766,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(exp.H1resonanceFrequency_Hz)))
             offFreq.value = int(np.round(float(rls.header['sin']['acq_gamma'][0][0]) / H1_GAMMA * float(
                 exp.H1resonanceFrequency_Hz) * data_set_config.xe_dissolved_offset_ppm / 1000000))
-        except: # info not in data/list
+        except Exception:  # info not in data/list
             pass
         userParams.userParameterLong.insert(0, centFreq)
         userParams.userParameterLong.insert(0, offFreq)
@@ -768,7 +778,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         enc.encodingLimits.kspace_encoding_step_1.maximum = (
             (enc.encodingLimits.kspace_encoding_step_2.maximum+1) * temp_max_spokes_per_intlv) - 1
         enc.encodingLimits.kspace_encoding_step_2.maximum = 0
-    
+
     # Save updated header
     header.userParameters = userParams
     header.sequenceParameters = pars
@@ -828,14 +838,14 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     dset.write_xml_header(mrd.xsd.ToXML(header))
 
     # Create data matrices
-    Nkx = header.encoding[0].encodingLimits.kspace_encoding_step_0.maximum - header.encoding[0].encodingLimits.kspace_encoding_step_0.minimum + 1
-    #acqs = data = contrasts = sets = kzs = kys = kxs = [None] * dset.number_of_acquisitions()
-    #acqs = data = contrasts = sets = kzs = kys = kxs = [None] * n_acq_use
+    Nkx = header.encoding[0].encodingLimits.kspace_encoding_step_0.maximum - \
+        header.encoding[0].encodingLimits.kspace_encoding_step_0.minimum + 1
+    # acqs = data = contrasts = sets = kzs = kys = kxs = [None] * dset.number_of_acquisitions()
+    # acqs = data = contrasts = sets = kzs = kys = kxs = [None] * n_acq_use
 
+    #  Read/store all data/labels for ease/simplicity
+    #  ---------------- Gas contamination removal ----------------
 
-    # Read/store all data/labels for ease/simplicity
-    # ---------------- Gas contamination removal ----------------
-        
     if data_set_config.gas_contam_removal:
         # -----------------------------
         # Handle bonus spectra
@@ -921,18 +931,18 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             n_fids = len(bonus_fid)
             inst = data_set_config.institution
 
-            if n_fids == 6: # and inst == 'CCHMC':
-                PreDissolvedFID  = bonus_fid[0]
+            if n_fids == 6:  # and inst == 'CCHMC':
+                PreDissolvedFID = bonus_fid[0]
                 PostDissolvedFID = bonus_fid[3]
-                PreGasFID        = bonus_fid[1]
-                PostGasFID       = bonus_fid[4]
+                PreGasFID = bonus_fid[1]
+                PostGasFID = bonus_fid[4]
 
-            elif n_fids == 2: # and inst == 'Polarean':
+            elif n_fids == 2:  # and inst == 'Polarean':
                 zeros_fid = np.zeros_like(bonus_fid[0])
-                PreDissolvedFID  = zeros_fid
+                PreDissolvedFID = zeros_fid
                 PostDissolvedFID = bonus_fid[0]
-                PreGasFID        = zeros_fid
-                PostGasFID       = bonus_fid[1]
+                PreGasFID = zeros_fid
+                PostGasFID = bonus_fid[1]
 
             else:
                 raise ValueError(
@@ -948,13 +958,13 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         # -----------------------------
         # K-space split
         # -----------------------------
-        gas_rep  = data_set_config.contrast_order.index(1)
+        gas_rep = data_set_config.contrast_order.index(1)
         diss_rep = data_set_config.contrast_order.index(2)
 
         # acqs already contains only the acquisitions you decided to keep,
         # so do NOT filter with bonus_set again here
         gas_acq_idx = [i for i, a in enumerate(acqs) if a is not None and a.idx.repetition == gas_rep]
-        diss_acq_idx = [i for i, a in enumerate(acqs) if a is not None and a.idx.repetition == diss_rep]       
+        diss_acq_idx = [i for i, a in enumerate(acqs) if a is not None and a.idx.repetition == diss_rep]
         gas_acq_idx = gas_acq_idx[1:-1]
         diss_acq_idx = diss_acq_idx[1:-1]
 
@@ -974,23 +984,23 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             axis=1
         )
 
-        #OvsFactor = 1
+        # OvsFactor = 1
         extraOvs = True
         if extraOvs:
             # ---- Dissolved FIDs ----
-            PreDissolvedFID  = movmean(PreDissolvedFID, OvsFactor)
-            PreDissolvedFID  = PreDissolvedFID[::OvsFactor]
+            PreDissolvedFID = movmean(PreDissolvedFID, OvsFactor)
+            PreDissolvedFID = PreDissolvedFID[::OvsFactor]
 
             PostDissolvedFID = movmean(PostDissolvedFID, OvsFactor)
             PostDissolvedFID = PostDissolvedFID[::OvsFactor]
 
             # ---- Gas FIDs ----
-            PreGasFID  = movmean(PreGasFID, OvsFactor)
-            PreGasFID  = PreGasFID[::OvsFactor]
+            PreGasFID = movmean(PreGasFID, OvsFactor)
+            PreGasFID = PreGasFID[::OvsFactor]
 
             PostGasFID = movmean(PostGasFID, OvsFactor)
             PostGasFID = PostGasFID[::OvsFactor]
-            
+
             # ---- K-space ----
             DissolvedKSpaceInit = movmean(DissolvedKSpaceInit, OvsFactor)
             DissolvedKSpaceInit = DissolvedKSpaceInit[::OvsFactor]
@@ -999,7 +1009,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             GasKSpaceInit = GasKSpaceInit[::OvsFactor]
 
             # ---- Adjust dwell time ----
-            #dwell_s = dwell_s * OvsFactor            
+            # dwell_s = dwell_s * OvsFactor
 
         if debug_mode:
             # Ensure at least 3 projections exist
@@ -1026,14 +1036,13 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
             plt.tight_layout()
             plt.show()
-            
 
             # ---- Adjust dwell time ----
-            #dwell_s = dwell_s * OvsFactor
+            # dwell_s = dwell_s * OvsFactor
 
             # ---- Attenuation Correction ----
             # MATLAB: PostGasFID(1,1) and GasKSpaceInit(1,end,end)
-        
+
         scaleFac = np.abs(PostGasFID[0]) / np.abs(GasKSpaceInit[0, -1])
         scaleFac1dis = np.abs(PostDissolvedFID[0]) / np.abs(DissolvedKSpaceInit[0, -1])
 
@@ -1045,8 +1054,8 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         # -------------------- Initial guesses --------------------
         A0 = np.abs(PostDissolvedFID[0])  # MATLAB PostDissolvedFID(1)
 
-        area_guess  = np.array([0.27*A0, 1.0*A0, 0.10*A0], dtype=float)
-        freq_guess  = np.array([534.0, -126.0, -7084.0], dtype=float)
+        area_guess = np.array([0.27*A0, 1.0*A0, 0.10*A0], dtype=float)
+        freq_guess = np.array([534.0, -126.0, -7084.0], dtype=float)
 
         fwhmL_guess = np.array([300.0, 273.0, 44.0], dtype=float)
         fwhmG_guess = np.array([0.0, 275.0, 0.0], dtype=float)
@@ -1054,11 +1063,11 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         phase_guess = np.array([-95.0, 151.0, 9.0], dtype=float)  # degrees (your code uses degrees)
 
         # -------------------- Bounds  --------------------
-        area_lb  = np.array([0.0, 0.0, 0.0], dtype=float)
-        area_ub  = np.array([1e10, 1e10, 1e10], dtype=float)
+        area_lb = np.array([0.0, 0.0, 0.0], dtype=float)
+        area_ub = np.array([1e10, 1e10, 1e10], dtype=float)
 
-        freq_lb  = np.array([500.0, -2000.0, -12000.0], dtype=float)
-        freq_ub  = np.array([2000.0, 0.0, -4000.0], dtype=float)
+        freq_lb = np.array([500.0, -2000.0, -12000.0], dtype=float)
+        freq_ub = np.array([2000.0, 0.0, -4000.0], dtype=float)
 
         fwhmL_lb = np.array([0.0, 0.0, 0.0], dtype=float)
         fwhmL_ub = np.array([np.inf, np.inf, np.inf], dtype=float)
@@ -1069,7 +1078,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         fwhmG_ub = np.array([eps, np.inf, eps], dtype=float)  # instead of [0, inf, 0]
 
         phase_lb = np.array([-np.inf, -np.inf, -np.inf], dtype=float)
-        phase_ub = np.array([ np.inf,  np.inf,  np.inf], dtype=float)
+        phase_ub = np.array([np.inf,  np.inf,  np.inf], dtype=float)
 
         lb = np.concatenate([area_lb, freq_lb, fwhmL_lb, fwhmG_lb, phase_lb])
         ub = np.concatenate([area_ub, freq_ub, fwhmL_ub, fwhmG_ub, phase_ub])
@@ -1090,7 +1099,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         )
         PrependedDissolvedNMRFit = make_timefit_x0_feasible(PrependedDissolvedNMRFit, lb, ub)
         PrependedDissolvedNMRFit.fit_time_signal_residual(bounds=(lb, ub))
-     
+
         # -------------------- 2) Fit appended dissolved (Post), seeded by Pre-fit --------------------
         if PreDissolvedFID is not None and np.any(np.abs(PreDissolvedFID) > 0):
             AppendedDissolvedNMRFit = NMR_TimeFit(
@@ -1117,18 +1126,18 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 line_broadening=0,
                 zeropad_size=time.size,
                 method="voigt",
-            )            
-            
+            )
+
         # Optional: initial fit (unbounded) like MATLAB
-        #AppendedDissolvedNMRFit.fit_time_signal_residual(bounds=(-np.inf, np.inf))
+        # AppendedDissolvedNMRFit.fit_time_signal_residual(bounds=(-np.inf, np.inf))
 
         # Critical: make x0 feasible for bounded refit (SciPy requirement)
         AppendedDissolvedNMRFit = make_timefit_x0_feasible(AppendedDissolvedNMRFit, lb, ub)
 
         # Bounded refit (MATLAB "setBounds + refit")
         AppendedDissolvedNMRFit.fit_time_signal_residual(bounds=(lb, ub))
-        
-        # -------------------- 3)  dwell_s * fftshift(fft(calcComponentTimeDomainSignal(time),[],1),1) --------------------
+
+        # --------------- 3)  dwell_s * fftshift(fft(calcComponentTimeDomainSignal(time),[],1),1) ---------------
         comp_td = AppendedDissolvedNMRFit.calcComponentTimeDomainSignal(time)  # (Nt, 3)
 
         # FFT each component along time axis (axis=0), then fftshift along same axis
@@ -1138,7 +1147,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         fit_sum = np.sum(fit_components, axis=1)  # (Nf,)
 
         phase = AppendedDissolvedNMRFit.phase[2]
-        area  = AppendedDissolvedNMRFit.area[2]
+        area = AppendedDissolvedNMRFit.area[2]
 
         if debug_mode:
             f = AppendedDissolvedNMRFit.f
@@ -1166,7 +1175,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             plt.gca().invert_xaxis()
             plt.xticks(fontsize=22)
             plt.yticks(fontsize=22)
-            
+
             leg = plt.legend(loc='best', ncol=3, frameon=False)
             for text in leg.get_texts():
                 text.set_fontsize(18)
@@ -1188,9 +1197,9 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             data_dissolved=DissolvedKSpaceInit,
             data_gas=GasKSpaceInit,
             sample_time=dwell_s,
-            freq_gas_acq_diss = -freq_jump,
-            phase_gas_acq_diss = phase,
-            area_gas_acq_diss = area,
+            freq_gas_acq_diss=-freq_jump,
+            phase_gas_acq_diss=phase,
+            area_gas_acq_diss=area,
             fa_gas=float(data_set_config.flip_angle_gas),
         )
 
@@ -1243,10 +1252,10 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             ax.grid(False)
 
             plt.tight_layout()
-            plt.show()    
-            
+            plt.show()
+
         # e) write corrected data back into dissolved acquisitions
-        mode = "trim" # mode: 'pad' (do nothing) or 'trim'
+        mode = "trim"  # mode: 'pad' (do nothing) or 'trim'
         # dissolved
         write_kspace_to_acqs(
             acqs=acqs,
@@ -1260,17 +1269,17 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             acq_idx=gas_acq_idx,
             kspace_mat=GasKSpaceInit,
             mode=mode
-        )        
+        )
         print("Gas contamination removal applied.")
 
     else:
-        acqs      = [None] * n_acq_use
-        data      = [None] * n_acq_use
+        acqs = [None] * n_acq_use
+        data = [None] * n_acq_use
         contrasts = [None] * n_acq_use
-        sets      = [None] * n_acq_use
-        kzs       = [None] * n_acq_use
-        kys       = [None] * n_acq_use
-        kxs       = [None] * n_acq_use
+        sets = [None] * n_acq_use
+        kzs = [None] * n_acq_use
+        kys = [None] * n_acq_use
+        kxs = [None] * n_acq_use
 
         if data_set_config.data_type == DataType.DIXON:
             acq_temp = dset.read_acquisition(10)
@@ -1326,15 +1335,15 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 sets[acqnum] = acq_temp.idx.set
                 kzs[acqnum] = acq_temp.idx.kspace_encode_step_2
                 kys[acqnum] = acq_temp.idx.kspace_encode_step_1
-                kxs[acqnum] = acq_temp.number_of_samples    
+                kxs[acqnum] = acq_temp.number_of_samples
     # -----------------------------------------------------------
 
     # update data and headers
-    # Version   |   
+    # Version   |
     # Philips:  | location | average | extr1   | mix      | card  | dynamic    | echo     | kz | ky | kx
     # MRD:      | slice    | average | segment | set      | phase | repetition | contrast | kz | ky | kx
     # XeCTCMRD: | N/A      | N/A     | N/A     | spec/img | N/A   | contrast   | set      | kz | ky | kx
-    
+
     for acqnum in range(len(acqs)):
         acq_temp = acqs[acqnum]
         if debug_mode:
@@ -1349,23 +1358,23 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         # set flag for bonus spectra (prior to reusing set for echoes)
         if acq_temp.idx.set > 0:
             acq_temp.measurement_uid = acq_temp.idx.set
-            
-        if data_set_config.ext_traj == True:
+
+        if data_set_config.ext_traj is True:
             try:
                 if acq_temp.idx.contrast == 0:
                     traj = crds[acq_temp.idx.kspace_encode_step_2,
-                                acq_temp.idx.kspace_encode_step_1, :, :]                    
+                                acq_temp.idx.kspace_encode_step_1, :, :]
                 else:
                     traj = crds_flyback[acq_temp.idx.kspace_encode_step_2,
                                         acq_temp.idx.kspace_encode_step_1, :, :]
                 if debug_mode:
                     if acqnum < 5:
                         print("traj first point:", traj[0, :])
-                #acq_temp.traj[:] = traj
+                # acq_temp.traj[:] = traj
                 n = min(acq_temp.traj.shape[0], traj.shape[0])
-                acq_temp.traj[:n, :] = traj[:n, :].astype(acq_temp.traj.dtype, copy=False)  
-                acq_temp.sample_time_us = dwell.value             
-            except:
+                acq_temp.traj[:n, :] = traj[:n, :].astype(acq_temp.traj.dtype, copy=False)
+                acq_temp.sample_time_us = dwell.value
+            except Exception:
                 pass
 
         # mrd contrasts = xemrd sets
@@ -1382,7 +1391,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         if data_set_config.data_type == DataType.DIXON:
             try:
                 contrast = data_set_config.contrast_order[acq_temp.idx.repetition]
-            except: # innaccurate contrast order - potentially due to only data/list
+            except Exception:  # innaccurate contrast order - potentially due to only data/list
                 print('WARNING: More repetitions than contrasts provided, setting to 0')
                 contrast = 0
             acq_temp.idx.contrast = contrast
@@ -1390,7 +1399,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             acq_temp.idx.contrast = 0
 
         acq_temp.idx.repetition = 0  # repetition used for gas vs diss is now unused
-                      
+
         # remove interleaving
         if data_set_config.data_type == DataType.DIXON:
             acq_temp.idx.kspace_encode_step_1 = acq_temp.idx.kspace_encode_step_2 * \
@@ -1399,14 +1408,14 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
         # Replace old acq header
         dset.write_acquisition(acq_temp, acqnum)
-        
+
     if data_set_config.data_type == DataType.DIXON:
         if data_set_config.gas_contam_removal and data_set_config.exclude_bonus_spec:
             mrdPath = Path(mrdName)
             filteredPath = mrdPath.with_name(mrdPath.stem + "_noBonus.h5")
 
             # build filtered file
-            keep_idx = [i for i in range(dset.number_of_acquisitions()) 
+            keep_idx = [i for i in range(dset.number_of_acquisitions())
                         if i not in bonus_idx]
             make_filtered_mrd_by_indices(mrdPath, filteredPath, keep_idx)
 
@@ -1414,8 +1423,8 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
             dset.close()
             mrdName = filteredPath
             dset = mrd.Dataset(str(mrdName), "dataset", create_if_needed=False)
-            print("Using filtered MRD:", mrdName, "acqs =", dset.number_of_acquisitions())       
-        
+            print("Using filtered MRD:", mrdName, "acqs =", dset.number_of_acquisitions())
+
     # Save dset
     dset.close()
 
@@ -1424,7 +1433,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
         try:
             os.remove(os.path.join(mrdName.parent,
                       patientID+'_calibration.h5'))
-        except:
+        except Exception:
             pass
         os.rename(mrdName, os.path.join(
             mrdName.parent, patientID+'_calibration.h5'))
@@ -1434,7 +1443,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 os.remove(os.path.join(mrdName.parent, patientID+'_dixon_corrected.h5'))
             else:
                 os.remove(os.path.join(mrdName.parent, patientID+'_dixon.h5'))
-        except:
+        except Exception:
             pass
         if data_set_config.gas_contam_removal:
             os.rename(mrdName, os.path.join(mrdName.parent, patientID+'_dixon_corrected.h5'))
@@ -1443,7 +1452,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     if data_set_config.data_type == DataType.UTE:
         try:
             os.remove(os.path.join(mrdName.parent, patientID+'_proton.h5'))
-        except:
+        except Exception:
             pass
         os.rename(mrdName, os.path.join(
             mrdName.parent, patientID+'_proton.h5'))
@@ -1452,7 +1461,8 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        description="A script/function to convert Xe gas exchange data collected on Philips to the Xe CTC MRD standard.")
+        description="A script/function to convert Xe gas exchange data collected"
+        "on Philips to the Xe CTC MRD standard.")
 
     # Define optional arguments
     parser.add_argument(
@@ -1478,7 +1488,5 @@ if __name__ == "__main__":
 
     # Call the main function with parsed arguments
     Gx2XeCTCMRD(data_file=args.data_file,
-                raw_file=args.raw_file, 
+                raw_file=args.raw_file,
                 traj_file=args.traj_file)
-
-

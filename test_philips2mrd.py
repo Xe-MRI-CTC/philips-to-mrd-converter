@@ -1,6 +1,7 @@
 import unittest
+from pathlib import Path
 import os
-from philips2mrd import *
+from philips2mrd import Ph2Mrd
 from Scripts import XeGasExchange2XeCTCMRD
 
 
@@ -50,13 +51,13 @@ class TestPhilips2MRD(unittest.TestCase):
         ]
 
     def test_1_setup(self):
-        print(f"\nTesting empty Ph2Mrd class instantiation...")
+        print("\\nTesting empty Ph2Mrd class instantiation...")
         result = Ph2Mrd()
         self.assertIsInstance(
             result, Ph2Mrd, "Empty Ph2Mrd Class not instantiated correctly")
 
     def test_2_both(self):
-        print(f"\nTesting class instantiation with both raw data files...")
+        print("\\nTesting class instantiation with both raw data files...")
         for dataset in range(len(self.test_data)):
             data_name = self.test_data[dataset]["name"]
             # create converter instance
@@ -72,7 +73,7 @@ class TestPhilips2MRD(unittest.TestCase):
             result.convert(self.loc)
 
     def test_3_dl(self):
-        print(f"\nTesting class instantiation with only data/list files...")
+        print("\\nTesting class instantiation with only data/list files...")
         for dataset in range(len(self.test_data)):
             data_name = self.test_data[dataset]["name"]
             print(
@@ -87,7 +88,7 @@ class TestPhilips2MRD(unittest.TestCase):
             result.convert(self.loc)
 
     def test_4_rls(self):
-        print(f"\nTesting class instantiation with only raw/lab/sin files...")
+        print("\\nTesting class instantiation with only raw/lab/sin files...")
         for dataset in range(len(self.test_data)):
             data_name = self.test_data[dataset]["name"]
             print(
@@ -102,17 +103,18 @@ class TestPhilips2MRD(unittest.TestCase):
             result.convert(self.loc)
 
     def test_5_gx_converter_both(self):
-        print(f"\nTesting gx converter script with both raw data files...")
+        print("\\nTesting gx converter script with both raw data files...")
         for dataset in range(len(self.test_data)):
             data_name = self.test_data[dataset]["name"]
             if self.test_data[dataset]["type"] == "gas exchange":
                 print(
                     f"    Testing gx converter script for both raw data for data set {dataset} : {data_name}")
                 XeGasExchange2XeCTCMRD.Gx2XeCTCMRD(
-                    data_file=self.test_data[dataset]["dl"], raw_file=self.test_data[dataset]["rls"], traj_file=self.test_data[dataset]["traj"])
+                    data_file=self.test_data[dataset]["dl"], raw_file=self.test_data[dataset]["rls"],
+                    traj_file=self.test_data[dataset]["traj"])
 
     def test_6_gx_converter_rls(self):
-        print(f"\nTesting gx converter script with only rls data files...")
+        print("\\nTesting gx converter script with only rls data files...")
         for dataset in range(len(self.test_data)):
             data_name = self.test_data[dataset]["name"]
             if self.test_data[dataset]["type"] == "gas exchange":
@@ -120,16 +122,16 @@ class TestPhilips2MRD(unittest.TestCase):
                     f"    Testing gx converter script for only rls data for data set {dataset} : {data_name}")
                 XeGasExchange2XeCTCMRD.Gx2XeCTCMRD(
                     data_file='', raw_file=self.test_data[dataset]["rls"], traj_file=self.test_data[dataset]["traj"])
-                
+
     def test_7_gx_converter_dl(self):
-        print(f"\nTesting gx converter script with only dl data files...")
+        print("\\nTesting gx converter script with only dl data files...")
         for dataset in range(len(self.test_data)):
             data_name = self.test_data[dataset]["name"]
             if self.test_data[dataset]["type"] == "gas exchange":
                 print(
                     f"    Testing gx converter script for only dl data for data set {dataset} : {data_name}")
                 XeGasExchange2XeCTCMRD.Gx2XeCTCMRD(
-                    data_file=self.test_data[dataset]["dl"], raw_file='', traj_file=self.test_data[dataset]["traj"])                
+                    data_file=self.test_data[dataset]["dl"], raw_file='', traj_file=self.test_data[dataset]["traj"])
 
 
 if __name__ == "__main__":

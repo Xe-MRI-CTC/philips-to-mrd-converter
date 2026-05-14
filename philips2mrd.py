@@ -7,14 +7,15 @@ import ismrmrd as mrd
 from xsdata.models.datatype import XmlDate, XmlTime
 import readphilips.ReadPhilips as rp
 
+
 class Ph2Mrd():
     def __init__(self, dlName=None, rlsName=None):
         # check that the path actually exists
-        if dlName != None and os.path.exists(dlName):
+        if dlName is not None and os.path.exists(dlName):
             self.dlName = dlName
         else:
             self.dlName = Path('')
-        if rlsName != None and os.path.exists(rlsName):
+        if rlsName is not None and os.path.exists(rlsName):
             self.rlsName = rlsName
         else:
             self.rlsName = Path('')
@@ -35,7 +36,7 @@ class Ph2Mrd():
         # Check that at least one raw data type provided
         dl_only = False
         rls_only = False
-        dl_rls = False
+        # dl_rls = False
         if not rlsPresent and not dlPresent:
             print('No raw data was found.')
             raise FileNotFoundError(
@@ -47,7 +48,8 @@ class Ph2Mrd():
             rls_only = True
             print('Only using .raw/.lab/.sin files for conversion; some fields may be missing...')
         elif rlsPresent and dlPresent:
-            dl_rls = True
+            # dl_rls = True
+            pass
         else:
             print('Raw data file combination does not exist.')
             raise FileNotFoundError(
@@ -115,7 +117,7 @@ class Ph2Mrd():
         try:
             acq_head.sample_time_us = float(
                 rlsPhData.header['sin']['sample_time_interval'][0][0])
-        except:
+        except Exception:
             # don't know so make t-axis = points
             acq_head.sample_time_us = float(1.0)
             print('Warning: dwell time not found; setting to 1us.')
@@ -145,10 +147,10 @@ class Ph2Mrd():
                     (rlsPhData.header['lab']['raw_format'] != np.uint8(6))
             # FROM PhilipsData:     data_string = np.array(['chan', 'mix', 'dyn', 'card', 'echo', 'row',
             #                                               'extra', 'loc', 'e3', 'meas', 'e2', 'e1', 'samp'])
-            acq_data = rlsPhData.data[:,:,:,:,:,:,:,:,0,:,:,:,:]# 13 dims, exclude e3 to match data/list
+            acq_data = rlsPhData.data[:, :, :, :, :, :, :, :, 0, :, :, :, :]  # 13 dims, exclude e3 to match data/list
             # now data_string = np.array(['chan', 'mix', 'dyn', 'card', 'echo', 'row',
             #                             'extra', 'loc', 'meas', 'e2', 'e1', 'samp'])
-            acq_data = np.permute_dims(acq_data,[0,1,2,3,5,6,4,8,7,9,10,11]) # permute to match data/list dims
+            acq_data = np.permute_dims(acq_data, [0, 1, 2, 3, 5, 6, 4, 8, 7, 9, 10, 11])  # permute to match data/list
         else:
             num_acqs = dlPhData.header['list']['typ'].size
             averages = [int(c) for c in dlPhData.header['list']['aver']]
@@ -169,18 +171,18 @@ class Ph2Mrd():
                     ((dlPhData.header['list']['chan']).astype(int) > 0)
             # FROM PhilipsData: outshape_string = np.array(['ch', 'mix', 'dyn', 'card', 'ex1', 'ex2',
             #                                               'echo', 'meas', 'loc', 'kz', 'ky', 'samp'])
-            acq_data = dlPhData.data # 12 dims
+            acq_data = dlPhData.data  # 12 dims
 
         for a in range(num_acqs):
             # Reset
             acq.clear_all_flags()
 
-            if skips[a]: # skip data not wanting to save
+            if skips[a]:  # skip data not wanting to save
                 continue
 
             # Index
             acq.scan_counter = a
-            
+
             acq.idx.average = averages[a]
             acq.idx.contrast = contrasts[a]
             acq.idx.kspace_encode_step_1 = k1s[a]
@@ -206,17 +208,17 @@ class Ph2Mrd():
             # FROM PhilipsData: outshape_string = np.array(['ch', 'mix', 'dyn', 'card', 'ex1', 'ex2',
             #                                               'echo', 'meas', 'loc', 'kz', 'ky', 'samp'])
             dat = acq_data[:,  # 'ch'
-                            acq.idx.set,  # 'mix'
-                            acq.idx.repetition,  # 'dyn',
-                            acq.idx.phase,  # 'card',
-                            acq.idx.segment,  # 'ex1',
-                            int(extr2s[a]),  # 'ex2',
-                            acq.idx.contrast,  # 'echo',
-                            acq.idx.average,  # 'meas',
-                            acq.idx.slice,  # 'loc',
-                            acq.idx.kspace_encode_step_2,  # 'kz',
-                            acq.idx.kspace_encode_step_1,  # 'ky',
-                            :]  # 'samp'
+                           acq.idx.set,  # 'mix'
+                           acq.idx.repetition,  # 'dyn',
+                           acq.idx.phase,  # 'card',
+                           acq.idx.segment,  # 'ex1',
+                           int(extr2s[a]),  # 'ex2',
+                           acq.idx.contrast,  # 'echo',
+                           acq.idx.average,  # 'meas',
+                           acq.idx.slice,  # 'loc',
+                           acq.idx.kspace_encode_step_2,  # 'kz',
+                           acq.idx.kspace_encode_step_1,  # 'ky',
+                           :]  # 'samp'
             acq.data[:] = dat[:, :nKx]
             try:
                 if acq.idx.contrast == 0:
@@ -233,8 +235,8 @@ class Ph2Mrd():
                     else:
                         traj = crds_flyback[acq.idx.kspace_encode_step_1, :, :]
 
-                acq.traj[:] = traj[:,0:acq.traj.shape[1]]
-            except:
+                acq.traj[:] = traj[:, 0:acq.traj.shape[1]]
+            except Exception:
                 pass
 
             # Flags
@@ -352,12 +354,12 @@ class Ph2Mrd():
 
         if not dl_only:
             rfov.x = float(rlsPhData.header['sin']['recon_resolutions'][0]
-                        [0]) * float(rlsPhData.header['sin']['voxel_sizes'][0][0])
+                           [0]) * float(rlsPhData.header['sin']['voxel_sizes'][0][0])
             rfov.y = float(rlsPhData.header['sin']['recon_resolutions'][0]
-                        [1]) * float(rlsPhData.header['sin']['voxel_sizes'][0][1])
+                           [1]) * float(rlsPhData.header['sin']['voxel_sizes'][0][1])
             rfov.z = float(rlsPhData.header['sin']['recon_resolutions'][0]
-                        [2]) * float(rlsPhData.header['sin']['voxel_sizes'][0][2])
-            
+                           [2]) * float(rlsPhData.header['sin']['voxel_sizes'][0][2])
+
             efov.x = float(
                 rlsPhData.header['sin']['oversample_factors'][0][0]) * float(rfov.x)
             efov.y = float(
@@ -369,18 +371,17 @@ class Ph2Mrd():
             rmatrix.y = int(rlsPhData.header['sin']['recon_resolutions'][0][1])
             rmatrix.z = int(rlsPhData.header['sin']['recon_resolutions'][0][2])
         else:
-            # rfov.x = 
-            # rfov.y = 
-            # rfov.z =             
-            # efov.x = 
-            # efov.y = 
-            # efov.z = 
+            # rfov.x =
+            # rfov.y =
+            # rfov.z =
+            # efov.x =
+            # efov.y =
+            # efov.z =
 
             rmatrix.x = dlPhData.header['list']['gen_info'][0][0][0]['X-resolution']
             rmatrix.y = dlPhData.header['list']['gen_info'][0][0][0]['Y-resolution']
             if data_size.dims == 3:
                 rmatrix.z = dlPhData.header['list']['gen_info'][0][0][0]['Z-resolution']
-
 
         espace.matrixSize = ematrix
         espace.fieldOfView_mm = efov
@@ -406,7 +407,7 @@ class Ph2Mrd():
                     rlsPhData.header['sin']['echo_times'][0][1])-float(rlsPhData.header['sin']['echo_times'][0][0]))
             pars.flipAngle_deg.insert(
                 0, float(rlsPhData.header['sin']['flip_angles'][0][0]))
-            
+
         header.sequenceParameters = pars
 
     def setMeasurementInfo(self, rlsPhData, header, dl_only):
@@ -417,17 +418,17 @@ class Ph2Mrd():
             scan_date = rlsPhData.header['sin']['start_scan_date_time'][0][0]
             scan_date = scan_date.split("-")
             scan_month = datetime.strptime(scan_date[1], "%b").month
-            scan_time = rlsPhData.header['sin']['start_scan_date_time'][0][1] #current read philips code only reads hour
-            
+            scan_time = rlsPhData.header['sin']['start_scan_date_time'][0][1]  # current read philips only reads hour
+
             meas_info.protocolName = rlsPhData.header['sin']['scan_name'][0][0]
             meas_info.seriesDate = XmlDate(
                 int(scan_date[2]), scan_month, int(scan_date[0]))
             meas_info.seriesTime = XmlTime(
-                int(scan_time), 0, 0) #set minute and sec to 0 since only get hour currently
-            
-            studyInfo.studyDate =  meas_info.seriesDate
+                int(scan_time), 0, 0)  # set minute and sec to 0 since only get hour currently
+
+            studyInfo.studyDate = meas_info.seriesDate
             studyInfo.studyTime = meas_info.seriesTime
-        
+
         header.measurementInformation = meas_info
         header.studyInformation = studyInfo
 
@@ -435,7 +436,7 @@ class Ph2Mrd():
         sys = mrd.xsd.acquisitionSystemInformationType()
         sys.systemVendor = 'Philips'
         sys.receiverChannels = data_size.numChan
-        
+
         if not dl_only:
             # hard coded as MN only offered on 3T
             if float(rlsPhData.header['sin']['acq_gamma'][0][0]) < 42000.0:
@@ -464,7 +465,7 @@ class Ph2Mrd():
         if rlsPresent:
             try:
                 traj_type = int(rlsPhData.header['sin']['k_space_traj_type'][0][0])
-            except:
+            except Exception:
                 traj_type = 0
         else:
             traj_type = None
@@ -472,14 +473,15 @@ class Ph2Mrd():
         # Use DL data for data size if present
         if dlPresent:
             # Create data size instance and update
+            # Only set for single mix at the moment
             # mix, echo, loc
             data_size = PhDataSize()
-            data_size.dims = dlPhData.header['list']['gen_info'][0][0][0]['number_of_encoding_dimensions'] # Only set up to take single mix at the moment
+            data_size.dims = dlPhData.header['list']['gen_info'][0][0][0]['number_of_encoding_dimensions']
             data_size.numChan = max([int(c) for c in dlPhData.header['list']['chan']]) + 1
             data_size.numMix = dlPhData.header['list']['gen_info'][0][0][0]['number_of_mixes']
             data_size.numDyn = dlPhData.header['list']['gen_info'][0][0][0]['number_of_dynamic_scans']
             data_size.numCard = dlPhData.header['list']['gen_info'][0][0][0]['number_of_cardiac_phases']
-            data_size.numRows = dlPhData.header['list']['gen_info'][0][0][0]['number_of_extra_attribute_1_values']  # Need to confirm
+            data_size.numRows = dlPhData.header['list']['gen_info'][0][0][0]['number_of_extra_attribute_1_values']  # ?
             data_size.numExtr2 = dlPhData.header['list']['gen_info'][0][0][0]['number_of_extra_attribute_2_values']
             data_size.numEcho = dlPhData.header['list']['gen_info'][0][0][0]['number_of_echoes']
             data_size.numAver = dlPhData.header['list']['gen_info'][0][0][0]['number_of_signal_averages']
@@ -515,7 +517,7 @@ class Ph2Mrd():
                 data_size.kxMin = dlPhData.header['list']['gen_info'][1][1][0]['kx_range'][0]
                 data_size.kxMax = dlPhData.header['list']['gen_info'][1][1][0]['kx_range'][1]
                 data_size.numKx[3] = data_size.kxMax - data_size.kxMin + 1
-        else: # Use RLS for data size
+        else:  # Use RLS for data size
             # Determine what encoding numbers to use
             enc_nr_name_min = 'min_encoding_numbers'
             enc_nr_name_max = 'max_encoding_numbers'

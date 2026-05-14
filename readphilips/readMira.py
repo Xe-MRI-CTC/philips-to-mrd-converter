@@ -8,22 +8,24 @@ from io import IOBase
 
 # little endian single element read functions
 #   -reads from either file objects or buffers
+
+
 def getInt(fil):
     fmt = '<i'  # little endian: <, int: i
     bytesize = 4
     if isinstance(fil, IOBase):
-        return(struct.unpack(fmt, fil.read(bytesize))[0])
+        return (struct.unpack(fmt, fil.read(bytesize))[0])
     else:
-        return(struct.unpack(fmt, fil[:bytesize])[0])
+        return (struct.unpack(fmt, fil[:bytesize])[0])
 
 
 def getShort(fil):
     fmt = '<h'  # little endian: <, short: h
     bytesize = 2
     if isinstance(fil, IOBase):
-        return(struct.unpack(fmt, fil.read(bytesize))[0])
+        return (struct.unpack(fmt, fil.read(bytesize))[0])
     else:
-        return(struct.unpack(fmt, fil[:bytesize])[0])
+        return (struct.unpack(fmt, fil[:bytesize])[0])
 
 # from BitStream.java
 # a bit shift get function
@@ -86,14 +88,13 @@ def decode(bitbuf, out_data_arr, offset, nr_out_elements):
                 out_data_arr[i] = (tmp << s) + r
                 i += 1
                 assn_cnt += 1
-            except:
+            except Exception:
                 pass
             bitbuf = bitbuf[rcnt:]
             read_cnt += 1
             n -= 1
 
-    return(read_cnt, assn_cnt)
-
+    return (read_cnt, assn_cnt)
 
 
 def decodeMira(bytebuff, temp_data, total_data_size):
@@ -120,4 +121,3 @@ def decodeMira(bytebuff, temp_data, total_data_size):
         index += tmp_coded_size
 
     return temp_data
-

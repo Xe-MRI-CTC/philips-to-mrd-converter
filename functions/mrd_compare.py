@@ -442,12 +442,12 @@ def _struct_like_to_dict(obj: Any, depth: int = 3) -> Any:
             except Exception:
                 out[name] = "<error>"
         return out
-    
+
     # Try converting ctypes / fixed-size array-like objects to lists
     as_list = _maybe_ctypes_array_to_list(obj)
     if as_list is not None:
         return as_list
-    
+
     return repr(obj)
 
 

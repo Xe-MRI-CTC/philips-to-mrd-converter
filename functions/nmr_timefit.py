@@ -1,16 +1,13 @@
 """NMR time fit class."""
 import sys
 from typing import Optional
-
-sys.path.append("..")
-  
-#matplotlib.use("TkAgg")
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import least_squares
 
-from functions.nmr_mix import NMR_Mix
-  
+sys.path.append("..")
+from functions.nmr_mix import NMR_Mix  # noqa: E402
+
 
 class NMR_TimeFit(NMR_Mix):
     """Class to fit time domain FIDs to a series of exponentially decaying components.
@@ -102,7 +99,7 @@ class NMR_TimeFit(NMR_Mix):
         else:
             x0 = np.array([self.area, self.freq, self.fwhm, self.phase]).flatten()
         # curve fitting using trust region reflection algorithm
-        ''' 
+        '''
         fit_result = least_squares(
             fun=fun,
             x0=x0,
@@ -112,17 +109,17 @@ class NMR_TimeFit(NMR_Mix):
             bounds=bounds,
             max_nfev=30000
         )
-        '''      
+        '''
         fit_result = least_squares(
             fun=fun,
             x0=x0,
             bounds=bounds,
-            method='trf', 
+            method='trf',
             max_nfev=30000,
             ftol=1E-9,
             xtol=1E-15,
             diff_step=None,  # None for central difference approximation
-            verbose=0  # 0 for 'off', 1 for 'iter', 2 for 'final'           
+            verbose=0  # 0 for 'off', 1 for 'iter', 2 for 'final'
         )
 
         # resolving the fitting results
@@ -160,7 +157,7 @@ class NMR_TimeFit(NMR_Mix):
             # check for aliased frequency
             alias_index = np.where(abs(fit_freq) > halfBW)
             n_alias = np.size(alias_index)
-        ''' 
+        '''
         # parsing the fitting results
         fit_vec = np.multiply(
             fit_param[0, :], np.exp(1j * np.pi * fit_param[-1, :] / 180.0)
@@ -171,7 +168,7 @@ class NMR_TimeFit(NMR_Mix):
         fit_param[0, :] = fit_area
         fit_param[1, :] = fit_freq
         fit_param[4, :] = fit_phase
-        
+
         if self.method == "voigt":
             fit_fwhmL = fit_param[2, :]
             fit_fwhmG = fit_param[3, :]
@@ -183,7 +180,7 @@ class NMR_TimeFit(NMR_Mix):
                 fwhmG=fit_fwhmG,
                 phase=fit_phase,
             )
-                   
+
         elif self.method == "lorentzian":
             fit_fwhm = fit_param[2, :]
             self.set_components(
@@ -193,7 +190,6 @@ class NMR_TimeFit(NMR_Mix):
             raise ValueError("Unknown fitting method.")
         '''
         return fit_param
-
 
     def get_residual_time_function(self, x: np.ndarray):
         """Calculate the residual of fitting.

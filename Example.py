@@ -39,17 +39,17 @@ eNy = enc.encodedSpace.matrixSize.y
 eNz = enc.encodedSpace.matrixSize.z
 
 ncoils = header.acquisitionSystemInformation.receiverChannels
-if enc.encodingLimits.slice != None:
+if enc.encodingLimits.slice is not None:
     nslices = enc.encodingLimits.slice.maximum + 1
 else:
     nslices = 1
 
-if enc.encodingLimits.repetition != None:
+if enc.encodingLimits.repetition is not None:
     nreps = enc.encodingLimits.repetition.maximum + 1
 else:
     nreps = 1
 
-if enc.encodingLimits.contrast != None:
+if enc.encodingLimits.contrast is not None:
     ncontrasts = enc.encodingLimits.contrast.maximum + 1
 else:
     ncontrasts = 1
@@ -74,7 +74,7 @@ for acqnum in range(dset.number_of_acquisitions()):
         break
 
 # Initialiaze a storage array
-ncontrasts = 1 # for these examples only get first echo
+ncontrasts = 1  # for these examples only get first echo
 all_data = np.zeros((nreps, ncontrasts, nslices, ncoils,
                     eNz, eNy, eNx), dtype=np.complex64)
 all_traj = np.zeros((nreps, ncontrasts, nslices,
@@ -103,14 +103,14 @@ dset.close()
 
 # Plot trajectory
 fig = plt.figure(figsize=(13, 6))
-traj = all_traj[0,0,0,0,:,:,:]
+traj = all_traj[0, 0, 0, 0, :, :, :]
 n_traj = 100
 n_traj = min(n_traj, len(traj))
 if acq.trajectory_dimensions == 2:
     ax = fig.add_subplot(121)
 else:
     ax = fig.add_subplot(121, projection="3d")
-colors = plt.cm.jet(np.linspace(0,1,n_traj))
+colors = plt.cm.jet(np.linspace(0, 1, n_traj))
 for i in range(n_traj):
     ax.plot(*traj[i].T, color=colors[i], lw=1)
 ax.set_aspect('equal')
@@ -118,13 +118,12 @@ ax.set_title('Trajectory')
 
 # Plot data
 slice_plot = nslices//2
-data = all_data[0,0,slice_plot,0,0,:,:]
+data = all_data[0, 0, slice_plot, 0, 0, :, :]
 n_data = 100
 n_data = min(n_data, len(data))
 ax = fig.add_subplot(122)
-colors = plt.cm.jet(np.linspace(0,1,n_traj))
+colors = plt.cm.jet(np.linspace(0, 1, n_traj))
 for i in range(n_data):
-    ax.plot(np.abs(data[i,:]), color=colors[i], lw=1)
+    ax.plot(np.abs(data[i, :]), color=colors[i], lw=1)
 ax.set_title('Data')
 plt.show()
-
