@@ -235,6 +235,7 @@ def _maybe_ctypes_array_to_list(obj: Any) -> Optional[Any]:
 # XML flattening / comparison
 # =============================================================================
 
+
 def _strip_ns(tag: str) -> str:
     if "}" in tag:
         return tag.split("}", 1)[1]
@@ -757,7 +758,7 @@ def summarize_images_and_waveforms(path: str) -> Dict[str, Any]:
 
 def summarize_ismrmrd_file(
     path: str,
-    sample_acqs: int = 10,
+    sample_acqs: int = 2,
     max_acqs_to_scan: Optional[int] = None,
     compare_data: bool = False,
 ) -> Dict[str, Any]:
@@ -776,6 +777,9 @@ def summarize_ismrmrd_file(
         "file_size_human": _format_bytes(p.stat().st_size),
         "file_sha256": _sha256_file(str(p)),
     }
+    # Read in ISMRMRD File
+    ismrmrd = _lazy_import_ismrmrd()
+    dset = ismrmrd.Dataset(path)
 
     # HDF5 structure
     try:
@@ -785,12 +789,14 @@ def summarize_ismrmrd_file(
 
     # XML header
     try:
-        xml_text = _read_xml_header_via_h5(str(p))
+        header = ismrmrd.xsd.CreateFromDocument(dset.read_xml_header())
+        header_xml = ismrmrd.xsd.ToXML(header)
+
         summary["xml_header"] = {
-            "present": bool(xml_text.strip()),
-            "length": len(xml_text),
-            "sha256": _sha256_bytes(xml_text.encode("utf-8")) if xml_text else None,
-            "flattened": flatten_xml_string(xml_text),
+            "present": bool(header_xml.strip()),
+            "length": len(header_xml),
+            "sha256": _sha256_bytes(header_xml.encode("utf-8")) if header_xml else None,
+            "flattened": flatten_xml_string(header_xml),
         }
     except Exception as ex:
         summary["xml_header_error"] = "".join(traceback.format_exception_only(type(ex), ex)).strip()
@@ -871,7 +877,7 @@ def _deep_diff(a: Any, b: Any, path: str = "") -> List[Dict[str, Any]]:
 def compare_ismrmrd_files(
     path_a: str,
     path_b: str,
-    sample_acqs: int = 10,
+    sample_acqs: int = 2,
     max_acqs_to_scan: Optional[int] = None,
     compare_data: bool = False,
 ) -> Dict[str, Any]:

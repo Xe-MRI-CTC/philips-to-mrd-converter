@@ -589,8 +589,10 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     debug_mode = data_set_config.debug_mode 
     
     # Get path to sin file trajectories if necessary
-    if data_set_config.data_type == DataType.CALIBRATION: 
+    if data_set_config.data_type == DataType.CALIBRATION:
         data_set_config.ext_traj == False
+    if traj_file is not None:
+        data_set_config.ext_traj = True
     if data_set_config.ext_traj == True:
         if traj_file == None:
             # Directory containing the running script
@@ -672,6 +674,9 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     sysInfo = header.acquisitionSystemInformation
     trajDescr = mrd.xsd.trajectoryDescriptionType()
     userParams = mrd.xsd.userParametersType()
+
+    # Save basic info necessary for later
+    orig_echoes = copy.deepcopy(header.encoding[0].encodingLimits.contrast)
 
     # Modify basic info
     sysInfo.institutionName = data_set_config.institution
@@ -775,7 +780,6 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     header.subjectInformation = subjectInfo
 
     # account for switching of data labels
-    orig_echoes = header.encoding[0].encodingLimits.contrast
     # repetitions are instead contrast with proton/gas/dissolved as 0/1/2
     if data_set_config.data_type != DataType.UTE:
         header.encoding[0].encodingLimits.contrast.minimum = min(
