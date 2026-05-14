@@ -1,8 +1,15 @@
 import unittest
+from unittest.mock import MagicMock
+import sys
 from pathlib import Path
 import os
-from philips2mrd import Ph2Mrd
-from Scripts import XeGasExchange2XeCTCMRD
+
+# Mock tkinter for github actions runners
+sys.modules['tkinter'] = MagicMock()
+sys.modules['tkinter.filedialog'] = MagicMock()
+
+from philips2mrd import Ph2Mrd  # noqa: E402
+from Scripts import XeGasExchange2XeCTCMRD  # noqa: E402
 
 
 class TestPhilips2MRD(unittest.TestCase):
