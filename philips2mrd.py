@@ -418,13 +418,14 @@ class Ph2Mrd():
             scan_date = rlsPhData.header['sin']['start_scan_date_time'][0][0]
             scan_date = scan_date.split("-")
             scan_month = datetime.strptime(scan_date[1], "%b").month
-            scan_time = rlsPhData.header['sin']['start_scan_date_time'][0][1]  # current read philips only reads hour
+            scan_time = rlsPhData.header['sin']['start_scan_date_time'][0][1]
+            time_obj = datetime.strptime(scan_time, '%H:%M:%S.%f')
 
             meas_info.protocolName = rlsPhData.header['sin']['scan_name'][0][0]
             meas_info.seriesDate = XmlDate(
                 int(scan_date[2]), scan_month, int(scan_date[0]))
             meas_info.seriesTime = XmlTime(
-                int(scan_time), 0, 0)  # set minute and sec to 0 since only get hour currently
+                int(time_obj.hour), int(time_obj.minute), int(time_obj.second))
 
             studyInfo.studyDate = meas_info.seriesDate
             studyInfo.studyTime = meas_info.seriesTime

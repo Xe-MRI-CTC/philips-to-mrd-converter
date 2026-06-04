@@ -1088,8 +1088,8 @@ def readSin(filename):
 
     # split on colons first
     #   -strip out colons at the end of lines
-    lines = [re.split(' +: +|: +| +:|:', line.strip(
-        ':\r\n').strip()) for line in lines]
+    lines = [re.split(r'\s*:\s*', line.strip(
+        ':\r\n').strip(), maxsplit=2) for line in lines]
 
     # throw out single sub-array elements
     lines = [line for line in lines if (len(line) > 1)]
