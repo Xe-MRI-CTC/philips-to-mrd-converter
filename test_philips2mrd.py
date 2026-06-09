@@ -55,6 +55,13 @@ class TestPhilips2MRD(unittest.TestCase):
                 "rls": os.path.join(data_path, "3DFLORET_GXBonus", "3DFLORET_GXBonus.sin"),
                 "traj": os.path.join(data_path, "3DFLORET_GXBonus", "3DFLORET_GXBonus_Traj.sin")
             },
+            {  # XeCTC Calibration example
+                "type": "calibration",
+                "name": "CTC calibration",
+                "dl": os.path.join(data_path, "XeCTC_Calibration", "XeCTC_Calibration.data"),
+                "rls": os.path.join(data_path, "XeCTC_Calibration", "XeCTC_Calibration.sin"),
+                "traj": None
+            },
         ]
 
     def test_1_setup(self):
@@ -139,6 +146,16 @@ class TestPhilips2MRD(unittest.TestCase):
                     f"    Testing gx converter script for only dl data for data set {dataset} : {data_name}")
                 XeGasExchange2XeCTCMRD.Gx2XeCTCMRD(
                     data_file=self.test_data[dataset]["dl"], raw_file='', traj_file=self.test_data[dataset]["traj"])
+
+    def test_8_cal_converter_both(self):
+        print("\\nTesting gx calibration converter script with both raw data files...")
+        for dataset in range(len(self.test_data)):
+            data_name = self.test_data[dataset]["name"]
+            if self.test_data[dataset]["type"] == "calibration":
+                print(
+                    f"    Testing gx calibration converter script for both raw data for data set {dataset} : {data_name}")
+                XeGasExchange2XeCTCMRD.Gx2XeCTCMRD(
+                    data_file=self.test_data[dataset]["dl"], raw_file=self.test_data[dataset]["rls"])
 
 
 if __name__ == "__main__":

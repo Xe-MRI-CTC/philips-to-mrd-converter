@@ -508,7 +508,7 @@ def reorder_crds_to_scanner_labels(acqs, crds, rep_to_use=None, set_to_use=None)
     return crds_out, ky_order
 
 
-def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
+def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=None):
     # Get paths
     if data_file == '' and raw_file == '':
         raise RuntimeError(
@@ -538,14 +538,20 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
 
     fname = path.split(os.sep)
     outDir = Path(path).parent.absolute()
-    try:
-        patientID = fname[-2]  # assume patient ID is name of folder
-    except Exception:
-        print('Folder not found.')
-        raise FileNotFoundError('Folder not found.')
 
     # Get config
     data_set_config = Config()
+    if config_settings is not None:  # overwrite desired settings
+        data_set_config.__dict__.update(config_settings)
+
+    if data_set_config.patientID is not None:
+        patientID = data_set_config.patientID
+    else:
+        try:
+            patientID = fname[-2]  # assume patient ID is name of folder
+        except Exception:
+            print('Folder not found.')
+            raise FileNotFoundError('Folder not found.')
 
     # Run converter
     inputData = p2m.Ph2Mrd(dlName, rlsName)
@@ -557,6 +563,8 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     # Get Config for XeMRD scan
     header = mrd.xsd.CreateFromDocument(dset.read_xml_header())
     data_set_config.update(dl, rls, header)
+    if config_settings is not None:  # overwrite desired settings
+        data_set_config.__dict__.update(config_settings)
 
     n_acq_total = dset.number_of_acquisitions()
     n_acq_use = n_acq_total
@@ -663,7 +671,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 if 'crds_flyback' in locals():
                     crds_flyback, _ = reorder_crds_to_scanner_labels(acqs_for_perm, crds_flyback, rep_to_use=rep0)
 
-    if debug_mode:
+    if debug_mode and data_set_config.ext_traj is True:
         # save coords as .mat file
         save_dir = os.path.dirname(data_file)
         os.makedirs(save_dir, exist_ok=True)
@@ -693,6 +701,10 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     sysInfo.systemFieldStrength_T = data_set_config.field_strength
     exp.H1resonanceFrequency_Hz = data_set_config.H1resonanceFrequency_Hz
     subjectInfo.patientID = patientID
+    if data_set_config.patientBirthdate is not None:
+        subjectInfo.patientBirthdate = data_set_config.patientBirthdate
+    if data_set_config.patientGender is not None:
+        subjectInfo.patientGender = data_set_config.patientGender
 
     orientation = mrd.xsd.userParameterStringType('orientation')
     orientation.value = data_set_config.orientation
@@ -753,8 +765,12 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
     if data_set_config.data_type != DataType.UTE:  # xenon has two trs for two frequencies
         # tr_factor accounts for different frequencies
         try:
-            pars.TR.insert(0, header.sequenceParameters.TR[0] * len(data_set_config.contrast_order))
-            pars.TR.insert(1, header.sequenceParameters.TR[0] * len(data_set_config.contrast_order))
+            if data_set_config.data_type is DataType.DIXON:
+                pars.TR.insert(0, header.sequenceParameters.TR[0] * len(data_set_config.contrast_order))
+                pars.TR.insert(1, pars.TR[0])
+            else:
+                # no interleaving so all same TR, 2 entries for gas and diss
+                pars.TR.insert(0, header.sequenceParameters.TR[0])
         except Exception:
             pass  # info not in data/list
 
@@ -833,6 +849,12 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None):
                 (header.encoding[echo_idx].encodingLimits.kspace_encoding_step_0.maximum+1)
             header.encoding[echo_idx].encodedSpace.matrixSize.x = int(
                 header.encoding[0].encodedSpace.matrixSize.x * 2)
+
+    # XeMRD uses sets to mark echoes and starts from 1 rather than 0
+    if data_set_config.data_type != DataType.UTE:
+        header.encoding[0].encodingLimits.set.minimum = 1
+        header.encoding[0].encodingLimits.contrast.maximum = header.encoding[0].encodingLimits.contrast.maximum + 1
+        header.encoding[0].encodingLimits.contrast.center = 1
 
     # finish header update
     dset.write_xml_header(mrd.xsd.ToXML(header))

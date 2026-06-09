@@ -14,8 +14,12 @@ class Config():
         '''
         Sets default values that are used as within the converter
         '''
-        # default values hard coded for XeCTC acquisition at CCHMC
+        # Optional Patient Information
+        self.patientID = None
+        self.patientBirthdate = None
+        self.patientGender = None
 
+        # default values hard coded for XeCTC acquisition at CCHMC
         # SET DEFAULT BASIC INFORMATION
         self.institution = 'CCHMC'  # 'CCHMC' | 'Polarean'
         self.field_strength = 3.0
