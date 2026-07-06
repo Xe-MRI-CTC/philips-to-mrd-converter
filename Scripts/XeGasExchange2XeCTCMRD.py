@@ -822,6 +822,10 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=N
         header.encoding[0].encodingLimits.contrast.center = 0
 
     # echoes are no longer contrast but instead sets; contrast limits were updated above
+    # XeCTC MRD starts with 1 rather than 0...
+    orig_echoes.center = orig_echoes.center + 1
+    orig_echoes.minimum = orig_echoes.minimum + 1
+    orig_echoes.maximum = orig_echoes.maximum + 1
     header.encoding[0].encodingLimits.set = orig_echoes
 
     # calibration doesn't do any encoding
@@ -841,20 +845,14 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=N
         header.encoding[0].encodingLimits.kspace_encoding_step_1.minimum = 0
 
     # add additional encodings for 2nd echo in 1pt dixon
-    if orig_echoes.maximum > 0:
+    if orig_echoes.maximum > 1:
         # all echoes after first will be full projections
-        for echo_idx in range(1, orig_echoes.maximum-orig_echoes.minimum+1):
+        for echo_idx in range(2, orig_echoes.maximum-orig_echoes.minimum+1):
             header.encoding.append(copy.deepcopy(header.encoding[0]))
             header.encoding[echo_idx].encodingLimits.kspace_encoding_step_0.minimum = - \
                 (header.encoding[echo_idx].encodingLimits.kspace_encoding_step_0.maximum+1)
             header.encoding[echo_idx].encodedSpace.matrixSize.x = int(
                 header.encoding[0].encodedSpace.matrixSize.x * 2)
-
-    # XeMRD uses sets to mark echoes and starts from 1 rather than 0
-    if data_set_config.data_type != DataType.UTE:
-        header.encoding[0].encodingLimits.set.minimum = 1
-        header.encoding[0].encodingLimits.contrast.maximum = header.encoding[0].encodingLimits.contrast.maximum + 1
-        header.encoding[0].encodingLimits.contrast.center = 1
 
     # finish header update
     dset.write_xml_header(mrd.xsd.ToXML(header))
@@ -1423,7 +1421,7 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=N
         acq_temp.idx.repetition = 0  # repetition used for gas vs diss is now unused
 
         # remove interleaving
-        if data_set_config.data_type == DataType.DIXON:
+        if data_set_config.data_type == DataType.DIXON or data_set_config.data_type == DataType.UTE:
             acq_temp.idx.kspace_encode_step_1 = acq_temp.idx.kspace_encode_step_2 * \
                 temp_max_spokes_per_intlv + acq_temp.idx.kspace_encode_step_1
             acq_temp.idx.kspace_encode_step_2 = 0
