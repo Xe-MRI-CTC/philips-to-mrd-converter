@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from scipy.optimize import least_squares
 
 sys.path.append("..")
-from functions.nmr_mix import NMR_Mix  # noqa: E402
+from philips2mrd.functions.nmr_mix import NMR_Mix  # noqa: E402
 
 
 class NMR_TimeFit(NMR_Mix):

@@ -1,3 +1,3 @@
-from . import ReadPhilips, readPhilipsExports, readMira, getSpiralParams, getRadialParams, file_io
+from . import ReadPhilips, readPhilipsExports, readMira, getSpiralParams, getRadialParams
 
-__all__ = ["ReadPhilips", "readPhilipsExports", "readMira", "getSpiralParams", "getRadialParams", "file_io"]
+__all__ = ["ReadPhilips", "readPhilipsExports", "readMira", "getSpiralParams", "getRadialParams"]

@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 import ismrmrd as mrd
 import ismrmrd.xsd
-import philips2mrd as p2m
+import philips2mrd.philips2mrd as p2m
 import matplotlib.pyplot as plt
 
 # Set paths

@@ -13,10 +13,10 @@ from scipy.io import savemat
 # local module import
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import philips2mrd as p2m  # noqa: E402
+import philips2mrd.philips2mrd as p2m  # noqa: E402
 import readphilips.ReadPhilips as rp  # noqa: E402
 from Scripts.XeGasExchange2XeCTCMRD_Config import Config, DataType  # noqa: E402
-from functions.nmr_timefit import NMR_TimeFit  # noqa: E402
+from philips2mrd.functions.nmr_timefit import NMR_TimeFit  # noqa: E402
 
 
 # Constants
