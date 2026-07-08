@@ -2,13 +2,12 @@ import sys
 import os
 import ismrmrd as mrd
 import argparse
-from tkinter import filedialog
-import tkinter as tk
 import numpy as np
 import copy
 import math
 import matplotlib.pyplot as plt
 from scipy.io import savemat
+import pathlib
 
 # local module import
 from pathlib import Path
@@ -510,38 +509,29 @@ def reorder_crds_to_scanner_labels(acqs, crds, rep_to_use=None, set_to_use=None)
 
 def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=None):
     # Get paths
-    if data_file == '' and raw_file == '':
-        raise RuntimeError(
-            'No raw data file passed. To use file selection dialog, pass None.')
-    root = tk.Tk()
-    root.withdraw()
+    if data_file is None and raw_file is None:
+        raise RuntimeError('No raw data file passed.')
+
     if data_file is None:
-        dlName = filedialog.askopenfilename(title='Select .data file', filetypes=[
-            ("Philips .data file", "*.data")])
-    elif data_file == '':
         dlName = None
+        print('Data file not passed. Information may be limited.')
     else:
         dlName = data_file
+        path = os.path.normpath(dlName)
 
     if raw_file is None:
-        rlsName = filedialog.askopenfilename(title='Select .raw file', filetypes=[
-            ("Philips .raw file", "*.raw")])
-    elif raw_file == '':
         rlsName = None
+        print('Raw file not passed. Information may be limited.')
     else:
         rlsName = raw_file
-
-    if rlsName is not None:
         path = os.path.normpath(rlsName)
-    else:
-        path = os.path.normpath(dlName)
 
     fname = path.split(os.sep)
     outDir = Path(path).parent.absolute()
 
     # Get config
     data_set_config = Config()
-    if config_settings is not None:  # overwrite desired settings
+    if config_settings is not None:  # overwrite desired settings if passed
         data_set_config.__dict__.update(config_settings)
 
     if data_set_config.patientID is not None:
@@ -1449,13 +1439,14 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=N
     dset.close()
 
     # Rename
+    out_filename = None
     if data_set_config.data_type == DataType.CALIBRATION:
         try:
             os.remove(os.path.join(mrdName.parent,
                       patientID+'_calibration.h5'))
         except Exception:
             pass
-        os.rename(mrdName, os.path.join(
+        out_filename = pathlib.Path.rename(mrdName, os.path.join(
             mrdName.parent, patientID+'_calibration.h5'))
     if data_set_config.data_type == DataType.DIXON:
         try:
@@ -1466,16 +1457,18 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=N
         except Exception:
             pass
         if data_set_config.gas_contam_removal:
-            os.rename(mrdName, os.path.join(mrdName.parent, patientID+'_dixon_corrected.h5'))
+            out_filename = pathlib.Path.rename(mrdName, os.path.join(mrdName.parent, patientID+'_dixon_corrected.h5'))
         else:
-            os.rename(mrdName, os.path.join(mrdName.parent, patientID+'_dixon.h5'))
+            out_filename = pathlib.Path.rename(mrdName, os.path.join(mrdName.parent, patientID+'_dixon.h5'))
     if data_set_config.data_type == DataType.UTE:
         try:
             os.remove(os.path.join(mrdName.parent, patientID+'_proton.h5'))
         except Exception:
             pass
-        os.rename(mrdName, os.path.join(
+        out_filename = pathlib.Path.rename(mrdName, os.path.join(
             mrdName.parent, patientID+'_proton.h5'))
+
+    return out_filename
 
 
 if __name__ == "__main__":
