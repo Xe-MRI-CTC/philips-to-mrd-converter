@@ -42,9 +42,14 @@ ISMRMRD provides a standardized format that enables:
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
-3. Install dependencies:
+3. Install the package and dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
+   ```
+   
+   Or install the package with development dependencies:
+   ```bash
+   pip install -e ".[dev]"
    ```
 
 ## Usage
@@ -145,13 +150,16 @@ python test_philips2mrd.py
 ```
 
 The test suite includes conversion tests for various data types:
+- 2D Cartesian
 - 2D Spiral
-- 3D Radial (CTC gas exchange)
-- 3D Radial with bonus spectroscopy
-- 3D Radial with 2 echoes
-- 3D FLORET with gas exchange
+- 3D Radial
+- 3D Radial Gas Exchange (CTC gas exchange)
+- 3D Radial Gas Exchange with bonus spectroscopy
+- 3D Radial Gas Exchange with 2 echoes
+- 3D FLORET Gas Exchange
+- XeCTC Calibration
 
-Test data is included in the `testdata/` directory.
+Test data is included in the `tests/testdata/` directory.
 
 ## API Reference
 

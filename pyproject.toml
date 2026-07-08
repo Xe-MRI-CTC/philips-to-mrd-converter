@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["philips2mrd", "readphilips", "Scripts", "tests", "resources"]
+
+[project]
+name = "philips-to-mrd-converter"
+version = "2.0.0"
+description = "This tool converts Philips raw MRI data into the ISMRMRD format."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    {name = "Matthew Willmering", email = "matthew.willmering@cchmc.org"}
+]
+dependencies = [
+    "ismrmrd==1.14.2",
+    "matplotlib",
+    "numpy",
+    "xsdata",
+    "h5py",
+    "scipy"
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pytest>=9.0",
+    "sigpy"
+]
+
+[tool.black]
+line-length = 127
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+minversion = "9.0"
