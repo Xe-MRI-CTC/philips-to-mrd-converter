@@ -618,10 +618,9 @@ def Gx2XeCTCMRD(data_file=None, raw_file=None, traj_file=None, config_settings=N
             if data_set_config.institution == 'Polarean':
                 ext_coords = repo_root / "resources" / "Polarean_Xenon_Radial_Dixon_20260211_NoSpec.sin"
 
-            # Safety check
-            if not ext_coords.exists():
-                ext_coords = filedialog.askopenfilename(title='Select trajectory .sin file', filetypes=[
-                    ("Trajectory .sin file", "*.sin")], initialdir=outDir)
+            if 'ext_coords' not in locals():
+                print('Set for external trajectory but none were provided/found.')
+                raise FileNotFoundError('External trajectory not found.')
         else:
             ext_coords = traj_file
 

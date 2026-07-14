@@ -62,7 +62,7 @@ class PhilipsData():
         self.propTSE = 0
         self.downsampleMode = 0
         self.rescale_type = 0
-        self.raw_corr = 0
+        self.raw_corr = True
         self.trajtype = 0  # Use for user added orderings of trajectories
         self.delay = math.nan  # Use for manual gr delays
 
@@ -77,7 +77,7 @@ class PhilipsData():
         if not os.path.exists(self.fname):
             return 0
 
-        if self.readType == 0:
+        if self.readType == 0: # data/list
             if self.selcoil:
                 cur_coil = -1  # self.getVal('Coil')
             else:
@@ -127,7 +127,7 @@ class PhilipsData():
 
 ##############################################################################
 
-        elif self.readType == 1:
+        elif self.readType == 1: # rec
             # read the data
             cur_loc = -1  # read all the data
             dat, hdr, dat_label = readPhilipsExports.readRec(
@@ -137,7 +137,7 @@ class PhilipsData():
 
 ##############################################################################
 
-        elif self.readType == 2:
+        elif self.readType == 2: # raw/lab/sin
             if self.readParamOnly is False:
                 hanningWidth = float(self.hanningWidth)/100.0
                 hanningWindow = float(self.hanningWindow)/100.0
@@ -188,7 +188,7 @@ class PhilipsData():
             else:
                 pass  # read param only
 
-        elif self.readType == 3:
+        elif self.readType == 3: # cpx
             # read the data
             cur_coil = -1  # read all the data
             cur_loc = -1
@@ -198,7 +198,7 @@ class PhilipsData():
             header = hdr
         # parm file
 
-        if (self.readType in [0, 2]):
+        if (self.readType in [0, 2]): # either raw data
             if self._scanner.ver != 'R56':
                 if os.path.exists(readPhilipsExports.filename_extcase(self.base+".txt")):
                     # read the parm file
@@ -257,7 +257,7 @@ class PhilipsData():
                             int(header['sin']['non_cart_max_encoding_nrs'][0][0])//2
 
         # Convert from 2vec float to complex64
-        if self.readType == 0 and self.readParamOnly is False:
+        if self.readType == 0 and self.readParamOnly is False: # data/list
             shape = list(dat.shape)
             shape.pop(-1)
             dat = np.frombuffer(dat.tobytes(), np.complex64)
@@ -279,7 +279,7 @@ class PhilipsData():
             except Exception:
                 pass
 
-        if self.readType in [0, 2] and self.chopkzON == 1 and self.readParamOnly is False:
+        if self.readType in [0, 2] and self.chopkzON == 1 and self.readParamOnly is False: # either raw data
             for i in range(dat.shape[-3]):
                 if i % 2 == 0:
                     dat[..., i, :, :] *= -1.0
@@ -425,9 +425,13 @@ class PhilipsData():
         spparams = getSpiralParams.processSpiralParams(header, self.base, self._scanner, self.delay)
         if len(spparams) > 1:
             self.spparams = spparams
+            self.coords = spparams['COORDS_EXPANDED']
         radparams = getRadialParams.processRadialParams(header, self.trajtype, self.delay)
         if len(radparams) > 2:
             self.radparams = radparams
+            self.coords = radparams['COORDS']
+            if radparams['FLYBACK'] == 1:
+                self.coords_flyback = radparams['COORDS_FLYBACK']
         try:
             self.header = header
         except Exception:
